@@ -4,8 +4,9 @@ import os
 import re
 from dotenv import load_dotenv
 
-# --- THE FIX: Import the module, not the class ---
-import youtube_transcript_api
+# --- THE ALIAS FIX ---
+# We rename it to 'YTApi' to stop Python from confusing it with local files
+from youtube_transcript_api import YouTubeTranscriptApi as YTApi
 
 from src.llm_engine import extract_knowledge_graph
 from src.graph_builder import visualize_knowledge_graph
@@ -27,8 +28,8 @@ def get_transcript_safe(video_id):
     Tries to fetch the transcript. Returns (text, error_message).
     """
     try:
-        # --- THE FIX: Call the class from inside the module ---
-        transcript_list = youtube_transcript_api.YouTubeTranscriptApi.get_transcript(video_id)
+        # --- CALLING THE ALIAS ---
+        transcript_list = YTApi.get_transcript(video_id)
         
         # Join the list of dictionaries into one string
         full_text = " ".join([item['text'] for item in transcript_list])
@@ -55,7 +56,6 @@ with st.sidebar:
         st.info("Tip: Add secrets.toml to auto-load this.")
 
     st.header("2. Video Source")
-    # Default to a known working video
     video_url = st.text_input("YouTube URL", value="https://www.youtube.com/watch?v=OhCzX0iLnOc")
     
     # Initialize session state for manual entry
@@ -81,7 +81,7 @@ with st.sidebar:
                     if text:
                         # SUCCESS
                         st.session_state['transcript'] = text
-                        st.session_state['show_manual_input'] = False # Hide manual box if successful
+                        st.session_state['show_manual_input'] = False 
                         st.success("Transcript fetched automatically!")
                     else:
                         # FAILURE
@@ -105,8 +105,6 @@ if st.session_state.get('show_manual_input'):
 # --- MAIN LOGIC ---
 if 'transcript' in st.session_state and st.session_state['transcript']:
     
-    # Check if we need to re-run the AI
-    # (We compare current text to the last text we processed)
     if 'current_processed_text' not in st.session_state or st.session_state['current_processed_text'] != st.session_state['transcript']:
         
         with st.spinner("Gemini is analyzing connections..."):
