@@ -7,7 +7,7 @@ def extract_knowledge_graph(transcript, api_key):
     """
     try:
         # 1. Configure the API
-        genai.configure(api_key=AIzaSyAx7lk64cRh_kFaYpjm0KMPkxeVyX_y5JA)
+        genai.configure(api_key=api_key)
         
         # 2. Select the Model (Flash is fast and free-tier eligible)
         model = genai.GenerativeModel('gemini-1.5-flash')
