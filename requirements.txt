@@ -1,7 +1,6 @@
 streamlit
-youtube-transcript-api
-openai
+google-generativeai
 pyvis
-networkx
 python-dotenv
-beautifulsoup4
+youtube-transcript-api
+watchdog
