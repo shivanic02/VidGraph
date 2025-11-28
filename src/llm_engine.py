@@ -2,26 +2,47 @@ import json
 import google.generativeai as genai
 import re
 
-def extract_knowledge_graph(transcript, api_key):
+def get_available_model():
     """
-    Sends text to Gemini Pro and requests a Knowledge Graph (Nodes/Edges).
+    Automatically finds a valid model so you don't have to guess names.
     """
     try:
-        # 1. Configure the API
+        # List all models available to your API key
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                # Prefer Flash or Pro 1.5 if available
+                if 'flash' in m.name:
+                    return m.name
+                if 'pro' in m.name and '1.5' in m.name:
+                    return m.name
+        
+        # Fallback: Just return the first one that supports content generation
+        for m in genai.list_models():
+             if 'generateContent' in m.supported_generation_methods:
+                return m.name
+                
+        return "models/gemini-1.5-flash" # Absolute fallback
+    except:
+        return "models/gemini-1.5-flash"
+
+def extract_knowledge_graph(transcript, api_key):
+    try:
         genai.configure(api_key=api_key)
         
-        # 2. Select the Stable Model (gemini-pro is universally available)
-        model = genai.GenerativeModel('gemini-pro')
+        # --- SMART FIX: Auto-select model ---
+        model_name = get_available_model()
+        print(f"Using Model: {model_name}") # Check your terminal to see which one it picked
         
-        # 3. Define the Prompt (Stronger JSON enforcement)
+        model = genai.GenerativeModel(model_name)
+        
         prompt = f"""
         You are a Knowledge Graph creator. 
-        Analyze the following transcript and extract key concepts and their relationships.
+        Analyze the transcript and extract key concepts and relationships.
         
         Transcript: 
         {transcript[:30000]} 
 
-        Output STRICTLY a JSON object with this structure. Do not add markdown ```json blocks. Just the raw string:
+        Output STRICTLY a JSON object. No markdown.
         {{
           "nodes": [
              {{"id": "Concept1", "label": "Concept1", "color": "#4F46E5"}},
@@ -31,24 +52,13 @@ def extract_knowledge_graph(transcript, api_key):
              {{"source": "Concept1", "target": "Concept2", "label": "relates to"}}
           ]
         }}
-        
-        Rules:
-        1. Identify 8-15 key concepts.
-        2. Connect them logically.
-        3. Keep labels short (1-3 words).
         """
 
-        # 4. Generate Content (Standard Mode)
         response = model.generate_content(prompt)
         
-        # 5. Clean the response (Gemini sometimes adds ```json at the start)
-        raw_text = response.text
-        # Remove markdown code blocks if present
-        clean_text = raw_text.replace("```json", "").replace("```", "").strip()
-        
-        # 6. Parse JSON
-        result = json.loads(clean_text)
-        return result
+        # Clean response
+        clean_text = response.text.replace("```json", "").replace("```", "").strip()
+        return json.loads(clean_text)
 
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": f"Model {model_name} failed: {str(e)}"}
