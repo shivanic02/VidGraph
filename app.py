@@ -1,133 +1,126 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import os
 import re
+import os
 from dotenv import load_dotenv
 
-# --- THE ALIAS FIX ---
-# We rename it to 'YTApi' to stop Python from confusing it with local files
-from youtube_transcript_api import YouTubeTranscriptApi as YTApi
-
+# Import custom modules
 from src.llm_engine import extract_knowledge_graph
 from src.graph_builder import visualize_knowledge_graph
 
-# Load environment variables
+# Try to import the YouTube library safely
+try:
+    from youtube_transcript_api import YouTubeTranscriptApi
+    YOUTUBE_LIB_AVAILABLE = True
+except ImportError:
+    YOUTUBE_LIB_AVAILABLE = False
+
 load_dotenv()
 
-# --- HELPER FUNCTIONS ---
+# --- HELPER: Video ID Extractor ---
 def get_video_id(url):
-    """Extracts Video ID from URL"""
     regex = r"(?:v=|\/)([0-9A-Za-z_-]{11}).*"
     match = re.search(regex, url)
-    if match:
-        return match.group(1)
-    return None
+    return match.group(1) if match else None
 
+# --- HELPER: Transcript Fetcher ---
 def get_transcript_safe(video_id):
-    """
-    Tries to fetch the transcript. Returns (text, error_message).
-    """
+    if not YOUTUBE_LIB_AVAILABLE:
+        return None, "Library not installed"
+    
     try:
-        # --- CALLING THE ALIAS ---
-        transcript_list = YTApi.get_transcript(video_id)
-        
-        # Join the list of dictionaries into one string
+        # Standard call
+        transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
         full_text = " ".join([item['text'] for item in transcript_list])
         return full_text, None
     except Exception as e:
+        # Catch the specific Attribute error or any other block
         return None, str(e)
 
-# --- UI SETUP ---
+# --- APP LAYOUT ---
 st.set_page_config(page_title="VidGraph.ai", layout="wide")
-st.markdown('<p style="font-size: 2.5rem; color: #4B4B4B;">VidGraph.ai 🧠</p>', unsafe_allow_html=True)
-st.caption("Turn YouTube Videos into Knowledge Graphs")
 
-# --- SIDEBAR & INPUTS ---
+# Custom Title
+st.markdown('<h1 style="color: #4B4B4B;">VidGraph.ai 🧠</h1>', unsafe_allow_html=True)
+st.caption("Transform YouTube Videos into Interactive Knowledge Graphs")
+
+# --- SIDEBAR ---
 with st.sidebar:
-    st.header("1. Settings")
+    st.header("⚙️ Settings")
     
-    # API Key Loading
+    # API Key Logic
     if "GOOGLE_API_KEY" in st.secrets:
-        default_key = st.secrets["GOOGLE_API_KEY"]
-        api_key = st.text_input("Gemini API Key", value=default_key, type="password")
-        st.success("Key loaded securely! 🔒")
+        api_key = st.secrets["GOOGLE_API_KEY"]
+        st.success("✅ API Key Loaded")
     else:
         api_key = st.text_input("Gemini API Key", type="password")
-        st.info("Tip: Add secrets.toml to auto-load this.")
+        st.caption("Tip: Use .streamlit/secrets.toml")
 
-    st.header("2. Video Source")
+    st.divider()
+    
+    st.header("📺 Video Source")
     video_url = st.text_input("YouTube URL", value="https://www.youtube.com/watch?v=OhCzX0iLnOc")
     
-    # Initialize session state for manual entry
-    if 'manual_transcript' not in st.session_state:
-        st.session_state['manual_transcript'] = ""
-
-    if st.button("Generate Graph"):
+    if st.button("🚀 Generate Graph", type="primary"):
         if not api_key:
-            st.error("Please provide an API Key.")
+            st.error("Missing API Key")
         elif not video_url:
-            st.error("Please provide a Video URL.")
+            st.error("Missing URL")
         else:
-            # 1. Extract Video ID
-            video_id = get_video_id(video_url)
+            # RESET STATE
+            st.session_state['transcript'] = None
+            st.session_state['graph_data'] = None
             
-            if not video_id:
-                st.error("Invalid YouTube URL.")
-            else:
+            # 1. Try Auto-Fetch
+            video_id = get_video_id(video_url)
+            if video_id:
                 with st.spinner("Fetching transcript..."):
-                    # 2. Try Auto-Fetch
                     text, error = get_transcript_safe(video_id)
                     
                     if text:
-                        # SUCCESS
                         st.session_state['transcript'] = text
-                        st.session_state['show_manual_input'] = False 
-                        st.success("Transcript fetched automatically!")
+                        st.success("Transcript fetched!")
                     else:
-                        # FAILURE
-                        st.warning(f"Auto-fetch failed ({error}). Switching to Manual Mode.")
-                        st.session_state['transcript'] = None 
-                        st.session_state['show_manual_input'] = True
+                        st.warning("⚠️ Auto-fetch unavailable. Switching to Manual Mode.")
+                        st.session_state['show_manual'] = True
+            else:
+                st.error("Invalid YouTube URL")
 
-# --- MANUAL FALLBACK INPUT ---
-if st.session_state.get('show_manual_input'):
-    st.warning("⚠️ YouTube blocked the automated tool. Please paste the transcript below:")
-    st.markdown(f"[Click here to open Transcript for this video]({video_url})")
+# --- MANUAL INPUT FALLBACK ---
+if st.session_state.get('show_manual'):
+    st.info("Paste the transcript below (Get it from the YouTube video description):")
+    manual_text = st.text_area("Transcript Text", height=200)
     
-    manual_text = st.text_area("Paste Transcript Here", height=300)
-    
-    if st.button("Process Manual Transcript"):
+    if st.button("Process Manual Text"):
         if manual_text:
             st.session_state['transcript'] = manual_text
-            st.session_state['show_manual_input'] = False
+            st.session_state['show_manual'] = False
             st.rerun()
 
-# --- MAIN LOGIC ---
-if 'transcript' in st.session_state and st.session_state['transcript']:
-    
-    if 'current_processed_text' not in st.session_state or st.session_state['current_processed_text'] != st.session_state['transcript']:
-        
-        with st.spinner("Gemini is analyzing connections..."):
-            graph_data = extract_knowledge_graph(st.session_state['transcript'], api_key)
+# --- GRAPH GENERATION LOGIC ---
+if st.session_state.get('transcript'):
+    # Check if we need to run AI (don't re-run if we already have graph data)
+    if not st.session_state.get('graph_data'):
+        with st.spinner("🧠 Gemini is mapping connections..."):
+            data = extract_knowledge_graph(st.session_state['transcript'], api_key)
             
-            if "error" in graph_data:
-                st.error(f"AI Error: {graph_data['error']}")
+            if "error" in data:
+                st.error(data['error'])
             else:
-                st.session_state['graph_data'] = graph_data
-                st.session_state['current_processed_text'] = st.session_state['transcript']
+                st.session_state['graph_data'] = data
 
-# --- DISPLAY RESULTS ---
+# --- RESULTS DISPLAY ---
 col1, col2 = st.columns([3, 1])
 
 with col1:
-    st.subheader("Knowledge Graph")
-    if 'graph_data' in st.session_state:
-        html_graph = visualize_knowledge_graph(st.session_state['graph_data'])
-        components.html(html_graph, height=600, scrolling=True)
+    st.subheader("Interactive Graph")
+    if st.session_state.get('graph_data'):
+        html = visualize_knowledge_graph(st.session_state['graph_data'])
+        components.html(html, height=600, scrolling=True)
     else:
-        st.info("Graph will appear here.")
+        st.markdown("*Graph will appear here...*")
 
 with col2:
-    st.subheader("Transcript")
-    if 'transcript' in st.session_state:
-        st.text_area("Source Text", st.session_state['transcript'], height=600)
+    st.subheader("Source Data")
+    if st.session_state.get('transcript'):
+        st.text_area("Read Transcript", st.session_state['transcript'], height=600)
