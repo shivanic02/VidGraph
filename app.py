@@ -91,7 +91,11 @@ if 'graph_data' in st.session_state:
                 
                 # Check Answer Button (per question)
                 if st.button(f"Check Answer {i+1}", key=f"btn{i}"):
-                    if user_answer == q['answer']:
+                    # FIX: We clean both strings to remove invisible spaces
+                    clean_user_answer = user_answer.strip()
+                    clean_correct_answer = q['answer'].strip()
+                    
+                    if clean_user_answer == clean_correct_answer:
                         st.success(f"✅ Correct! {q.get('explanation', '')}")
                     else:
                         st.error(f"❌ Incorrect. The correct answer is: {q['answer']}")
