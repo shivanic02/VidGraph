@@ -1,15 +1,5 @@
-# Python junk
 __pycache__/
 *.pyc
-
-# Environment secrets (IMPORTANT)
 .env
 .streamlit/secrets.toml
-
-# PyVis generated files (The ones you saw)
-tmp_graph.html
-lib/
-*.html
-
-# Mac system files (optional)
 .DS_Store
