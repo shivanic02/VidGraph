@@ -3,36 +3,21 @@ import google.generativeai as genai
 import re
 
 def get_available_model():
-    """
-    Automatically finds a valid model so you don't have to guess names.
-    """
+    """Finds a valid Gemini model automatically."""
     try:
-        # List all models available to your API key
         for m in genai.list_models():
             if 'generateContent' in m.supported_generation_methods:
-                # Prefer Flash or Pro 1.5 if available
-                if 'flash' in m.name:
-                    return m.name
-                if 'pro' in m.name and '1.5' in m.name:
-                    return m.name
-        
-        # Fallback: Just return the first one that supports content generation
-        for m in genai.list_models():
-             if 'generateContent' in m.supported_generation_methods:
-                return m.name
-                
-        return "models/gemini-1.5-flash" # Absolute fallback
+                if 'flash' in m.name: return m.name
+                if 'pro' in m.name and '1.5' in m.name: return m.name
+        return "models/gemini-1.5-flash"
     except:
         return "models/gemini-1.5-flash"
 
 def extract_knowledge_graph(transcript, api_key):
+    """Sends text to Gemini and requests JSON."""
     try:
         genai.configure(api_key=api_key)
-        
-        # --- SMART FIX: Auto-select model ---
         model_name = get_available_model()
-        print(f"Using Model: {model_name}") # Check your terminal to see which one it picked
-        
         model = genai.GenerativeModel(model_name)
         
         prompt = f"""
@@ -53,10 +38,7 @@ def extract_knowledge_graph(transcript, api_key):
           ]
         }}
         """
-
         response = model.generate_content(prompt)
-        
-        # Clean response
         clean_text = response.text.replace("```json", "").replace("```", "").strip()
         return json.loads(clean_text)
 
