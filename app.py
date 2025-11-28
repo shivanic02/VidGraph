@@ -100,3 +100,26 @@ if 'graph_data' in st.session_state:
                     else:
                         st.error(f"❌ Incorrect. The correct answer is: {q['answer']}")
                 st.divider()
+
+from src.pdf_generator import create_pdf
+
+# ... (Previous code)
+
+if 'quiz_data' in st.session_state:
+    st.divider()
+    st.subheader("3. Export")
+    
+    if st.button("📥 Generate PDF Study Guide"):
+        with st.spinner("Compiling PDF..."):
+            pdf_bytes = create_pdf(
+                st.session_state['transcript'],
+                st.session_state['graph_data'],
+                st.session_state['quiz_data']
+            )
+            
+            st.download_button(
+                label="📄 Download Now",
+                data=pdf_bytes,
+                file_name="VidGraph_Study_Guide.pdf",
+                mime="application/pdf"
+            )
