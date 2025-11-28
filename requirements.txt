@@ -1,0 +1,7 @@
+streamlit
+youtube-transcript-api
+openai
+pyvis
+networkx
+python-dotenv
+beautifulsoup4
