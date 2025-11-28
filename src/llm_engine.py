@@ -52,7 +52,7 @@ def generate_quiz(transcript, api_key):
         model = genai.GenerativeModel(get_available_model())
         
         prompt = f"""
-        Generate 3 multiple-choice questions based on this text to test understanding.
+        Generate 3 multiple-choice questions based on this text.
         
         Transcript:
         {transcript[:30000]}
@@ -60,12 +60,14 @@ def generate_quiz(transcript, api_key):
         Output STRICTLY JSON (no markdown):
         [
             {{
-                "question": "What is the main advantage of X?",
-                "options": ["Option A", "Option B", "Option C", "Option D"],
-                "answer": "Option A",
-                "explanation": "Option A is correct because..."
+                "question": "Question text here?",
+                "options": ["Full text of Option A", "Full text of Option B", "Full text of Option C", "Full text of Option D"],
+                "answer": "Full text of Option B",
+                "explanation": "Explanation here..."
             }}
         ]
+        
+        IMPORTANT RULE: The "answer" field must MATCH EXACTLY one of the strings in the "options" list. Do not just say "Option A", give the full text.
         """
         response = model.generate_content(prompt)
         clean_text = response.text.replace("```json", "").replace("```", "").strip()
