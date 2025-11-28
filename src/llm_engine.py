@@ -14,27 +14,27 @@ def get_available_model():
         return "models/gemini-1.5-flash"
 
 def extract_knowledge_graph(transcript, api_key):
-    """Sends text to Gemini and requests JSON."""
+    """Generates the Knowledge Graph with Node Importance."""
     try:
         genai.configure(api_key=api_key)
-        model_name = get_available_model()
-        model = genai.GenerativeModel(model_name)
+        model = genai.GenerativeModel(get_available_model())
         
         prompt = f"""
-        You are a Knowledge Graph creator. 
-        Analyze the transcript and extract key concepts and relationships.
+        You are a Knowledge Graph creator. Analyze the text and identify:
+        1. "Core Concepts" (The main 3-5 topics).
+        2. "Sub Concepts" (The details supporting them).
         
         Transcript: 
         {transcript[:30000]} 
 
-        Output STRICTLY a JSON object. No markdown.
+        Output STRICTLY JSON (no markdown):
         {{
           "nodes": [
-             {{"id": "Concept1", "label": "Concept1", "color": "#4F46E5"}},
-             {{"id": "Concept2", "label": "Concept2", "color": "#4F46E5"}}
+             {{"id": "Main Topic", "label": "Main Topic", "type": "core"}},
+             {{"id": "Sub Detail", "label": "Sub Detail", "type": "sub"}}
           ],
           "edges": [
-             {{"source": "Concept1", "target": "Concept2", "label": "relates to"}}
+             {{"source": "Main Topic", "target": "Sub Detail", "label": "includes"}}
           ]
         }}
         """
@@ -43,4 +43,33 @@ def extract_knowledge_graph(transcript, api_key):
         return json.loads(clean_text)
 
     except Exception as e:
-        return {"error": f"Model {model_name} failed: {str(e)}"}
+        return {"error": f"Graph Error: {str(e)}"}
+
+def generate_quiz(transcript, api_key):
+    """Generates a 3-question quiz from the text."""
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(get_available_model())
+        
+        prompt = f"""
+        Generate 3 multiple-choice questions based on this text to test understanding.
+        
+        Transcript:
+        {transcript[:30000]}
+
+        Output STRICTLY JSON (no markdown):
+        [
+            {{
+                "question": "What is the main advantage of X?",
+                "options": ["Option A", "Option B", "Option C", "Option D"],
+                "answer": "Option A",
+                "explanation": "Option A is correct because..."
+            }}
+        ]
+        """
+        response = model.generate_content(prompt)
+        clean_text = response.text.replace("```json", "").replace("```", "").strip()
+        return json.loads(clean_text)
+
+    except Exception as e:
+        return [{"error": str(e)}]
