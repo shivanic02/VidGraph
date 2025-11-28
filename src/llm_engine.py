@@ -75,3 +75,31 @@ def generate_quiz(transcript, api_key):
 
     except Exception as e:
         return [{"error": str(e)}]
+    
+
+# Add this to src/llm_engine.py
+
+def generate_summary(transcript, api_key):
+    """Generates a concise executive summary of the entire text."""
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(get_available_model())
+        
+        prompt = f"""
+        You are an expert technical writer. Write a high-level executive summary of the following transcript.
+        
+        Rules:
+        1. Cover the ENTIRE content (start to finish).
+        2. Do not just cut off the text; synthesize the main ideas.
+        3. Use bullet points for readability.
+        4. Keep it under 250 words.
+        
+        Transcript:
+        {transcript[:30000]}
+        """
+        
+        response = model.generate_content(prompt)
+        return response.text.strip()
+
+    except Exception as e:
+        return f"Error generating summary: {str(e)}"
