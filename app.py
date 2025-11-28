@@ -34,29 +34,29 @@ with st.sidebar:
     api_key = st.text_input("OpenAI API Key", type="password")
 
     if st.button("Generate Graph"):
-    if not video_url:
-        st.error("Please provide a URL.")
-    else:
-        with st.spinner("Fetching transcript..."):
-            # 1. Extract Video ID
-            video_id = get_video_id(video_url)
+        if not video_url:
+            st.error("Please provide a URL.")
+        else:
+            with st.spinner("Fetching transcript..."):
+                # 1. Extract Video ID
+                video_id = get_video_id(video_url)
 
-            if not video_id:
-                st.error("Invalid YouTube URL.")
-            else:
-                # 2. Get Transcript
-                transcript_text = get_transcript(video_id)
-
-                if "Error:" in transcript_text:
-                    st.error(transcript_text)
+                if not video_id:
+                    st.error("Invalid YouTube URL.")
                 else:
-                    st.success("Transcript extracted successfully!")
-                    # Debugging: Show the first 500 characters to prove it works
-                    with st.expander("View Raw Transcript"):
-                        st.write(transcript_text[:500] + "...")
+                    # 2. Get Transcript
+                    transcript_text = get_transcript(video_id)
 
-                    # Store in session state for the next step
-                    st.session_state['transcript'] = transcript_text
+                    if "Error:" in transcript_text:
+                        st.error(transcript_text)
+                    else:
+                        st.success("Transcript extracted successfully!")
+                        # Debugging: Show the first 500 characters to prove it works
+                        with st.expander("View Raw Transcript"):
+                            st.write(transcript_text[:500] + "...")
+
+                        # Store in session state for the next step
+                        st.session_state['transcript'] = transcript_text
 
 # Main Content Area
 col1, col2 = st.columns([2, 1])
