@@ -1,10 +1,9 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import os
 from dotenv import load_dotenv
 
-# We no longer need the YouTube library!
-from src.llm_engine import extract_knowledge_graph
+# Import our new engines
+from src.llm_engine import extract_knowledge_graph, generate_quiz
 from src.graph_builder import visualize_knowledge_graph
 
 load_dotenv()
@@ -12,84 +11,88 @@ load_dotenv()
 # --- APP CONFIGURATION ---
 st.set_page_config(page_title="VidGraph.ai", layout="wide", page_icon="🧠")
 
-# --- CSS FOR BETTER UI ---
 st.markdown("""
 <style>
-    .stTextArea textarea {
-        font-size: 14px; 
-    }
+    .stTextArea textarea { font-size: 14px; }
+    div[data-testid="stExpander"] details summary { font-weight: bold; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR: SETTINGS ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.markdown("## ⚙️ Settings")
-    
-    # 1. API Key Logic
     if "GOOGLE_API_KEY" in st.secrets:
         api_key = st.secrets["GOOGLE_API_KEY"]
         st.success("✅ Gemini Key Loaded")
     else:
         api_key = st.text_input("Gemini API Key", type="password")
-        st.caption("Get a free key from Google AI Studio")
 
     st.divider()
-    
-    st.markdown("### ℹ️ How it works")
-    st.markdown("""
-    1. Copy transcript from a YouTube video (or any text).
-    2. Paste it into the box.
-    3. Click **Generate Graph**.
-    4. Explore the connections!
-    """)
-    
-    st.divider()
-    st.markdown("Built for **CodeCraze 2025**")
+    st.markdown("### ℹ️ How to use")
+    st.info("Paste any text/transcript to generate a Knowledge Graph and a Practice Quiz.")
 
-# --- MAIN CONTENT ---
+# --- MAIN HEADER ---
 st.markdown('<h1 style="color: #4B4B4B;">VidGraph.ai 🧠</h1>', unsafe_allow_html=True)
-st.caption("Transform raw text into interactive Knowledge Graphs using Google Gemini.")
+st.caption("Advanced Learning Companion: Knowledge Graphs + AI Quizzes")
 
-# 1. INPUT SECTION
-st.subheader("1. Input Source")
-transcript_input = st.text_area(
-    "Paste your video transcript or article text here:",
-    height=200,
-    placeholder="Example: Machine learning is a field of inquiry devoted to understanding and building methods that 'learn'..."
-)
+# --- INPUT SECTION ---
+transcript_input = st.text_area("Paste Transcript / Text:", height=150)
+generate_btn = st.button("🚀 Analyze & Generate", type="primary")
 
-# 2. ACTION BUTTON
-generate_btn = st.button("🚀 Generate Knowledge Graph", type="primary")
-
-# 3. LOGIC & VISUALIZATION
+# --- PROCESSING LOGIC ---
 if generate_btn:
     if not api_key:
-        st.error("⚠️ Please enter a Google API Key in the sidebar.")
+        st.error("⚠️ Please enter a Google API Key.")
     elif not transcript_input:
-        st.error("⚠️ Please paste some text first.")
+        st.error("⚠️ Please paste text first.")
     else:
-        # Save to session state so it doesn't vanish on refresh
         st.session_state['transcript'] = transcript_input
         
-        with st.spinner("🧠 Gemini is analyzing concepts and connections..."):
-            # Call the AI Engine
-            data = extract_knowledge_graph(transcript_input, api_key)
+        with st.spinner("🧠 AI is building the Graph and Quiz..."):
+            # Parallel calls (simulated)
+            graph_data = extract_knowledge_graph(transcript_input, api_key)
+            quiz_data = generate_quiz(transcript_input, api_key)
             
-            if "error" in data:
-                st.error(f"AI Error: {data['error']}")
-            else:
-                st.session_state['graph_data'] = data
-                st.success("Graph generated successfully!")
+            st.session_state['graph_data'] = graph_data
+            st.session_state['quiz_data'] = quiz_data
+            st.success("Analysis Complete!")
 
-# 4. RESULTS DISPLAY
+# --- RESULTS DISPLAY ---
 if 'graph_data' in st.session_state:
-    st.divider()
-    st.subheader("2. Interactive Graph")
     
-    # Render the graph
-    html_graph = visualize_knowledge_graph(st.session_state['graph_data'])
-    components.html(html_graph, height=600, scrolling=True)
+    # Create Tabs for cleaner UI
+    tab1, tab2 = st.tabs(["📊 Knowledge Graph", "📝 Practice Quiz"])
     
-    # Optional: Show the raw data in an expander for debugging
-    with st.expander("View Graph Data (JSON)"):
-        st.json(st.session_state['graph_data'])
+    # TAB 1: THE GRAPH
+    with tab1:
+        st.subheader("Interactive Concept Map")
+        st.caption("🟡 Gold = Core Concepts | 🔵 Blue = Sub-concepts")
+        
+        if "error" in st.session_state['graph_data']:
+            st.error(st.session_state['graph_data']['error'])
+        else:
+            html_graph = visualize_knowledge_graph(st.session_state['graph_data'])
+            components.html(html_graph, height=600, scrolling=True)
+
+    # TAB 2: THE QUIZ
+    with tab2:
+        st.subheader("Test Your Knowledge")
+        quiz_data = st.session_state.get('quiz_data')
+        
+        if not quiz_data or "error" in quiz_data:
+            st.error("Could not generate quiz.")
+        else:
+            # Loop through questions
+            for i, q in enumerate(quiz_data):
+                st.markdown(f"**Q{i+1}: {q['question']}**")
+                
+                # Radio button for options
+                user_answer = st.radio(f"Select an answer for Q{i+1}:", q['options'], key=f"q{i}")
+                
+                # Check Answer Button (per question)
+                if st.button(f"Check Answer {i+1}", key=f"btn{i}"):
+                    if user_answer == q['answer']:
+                        st.success(f"✅ Correct! {q.get('explanation', '')}")
+                    else:
+                        st.error(f"❌ Incorrect. The correct answer is: {q['answer']}")
+                st.divider()
