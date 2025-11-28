@@ -19,21 +19,23 @@ class PDF(FPDF):
         self.multi_cell(0, 6, safe_body)
         self.ln()
 
-def create_pdf(transcript, graph_data, quiz_data):
+# src/pdf_generator.py
+
+def create_pdf(summary_text, graph_data, quiz_data):
     pdf = PDF()
     pdf.add_page()
     
     # 1. Executive Summary
-    pdf.chapter_title("1. Summary")
-    # Take first 1000 chars as summary
-    summary = transcript[:1000] + "..."
-    pdf.chapter_body(summary)
+    pdf.chapter_title("1. Executive Summary")
     
-    # 2. Key Vocabulary
-    pdf.chapter_title("2. Key Concepts")
+    # FIX: We now use the AI-generated summary_text passed to the function
+    # instead of chopping the transcript.
+    pdf.chapter_body(summary_text)
+    
+    # 2. Key Concepts (Graph Data)
+    pdf.chapter_title("2. Key Concepts (Knowledge Graph)")
     for node in graph_data['nodes']:
         label = node['label']
-        # FIX: Use safe characters instead of Unicode symbols
         prefix = "[CORE]" if node.get('type') == 'core' else "-"
         pdf.chapter_body(f"{prefix} {label}")
         
@@ -43,13 +45,11 @@ def create_pdf(transcript, graph_data, quiz_data):
     
     for i, q in enumerate(quiz_data):
         pdf.set_font('Arial', 'B', 11)
-        # Sanitize question text
         q_text = q['question'].encode('latin-1', 'replace').decode('latin-1')
         pdf.multi_cell(0, 6, f"Q{i+1}: {q_text}")
         
         pdf.set_font('Arial', '', 11)
         for opt in q['options']:
-            # Sanitize option text
             opt_clean = opt.encode('latin-1', 'replace').decode('latin-1')
             pdf.cell(0, 6, f"   - {opt_clean}", 0, 1)
         pdf.ln(2)
@@ -62,6 +62,4 @@ def create_pdf(transcript, graph_data, quiz_data):
         ans_clean = q['answer'].encode('latin-1', 'replace').decode('latin-1')
         pdf.cell(0, 6, f"Q{i+1}: {ans_clean}", 0, 1)
         
-    # Return PDF as bytes
-    # FIX: Use 'S' for string output, then encode to latin-1 to get bytes
     return pdf.output(dest='S').encode('latin-1')
