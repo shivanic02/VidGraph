@@ -2,5 +2,4 @@ streamlit
 google-generativeai
 pyvis
 python-dotenv
-youtube-transcript-api
 watchdog
