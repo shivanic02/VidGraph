@@ -3,7 +3,7 @@ import streamlit.components.v1 as components
 from dotenv import load_dotenv
 
 # Import our new engines
-from src.llm_engine import extract_knowledge_graph, generate_quiz
+from src.llm_engine import extract_knowledge_graph, generate_quiz, generate_summary
 from src.graph_builder import visualize_knowledge_graph
 
 load_dotenv()
@@ -48,13 +48,21 @@ if generate_btn:
     else:
         st.session_state['transcript'] = transcript_input
         
-        with st.spinner("🧠 AI is building the Graph and Quiz..."):
-            # Parallel calls (simulated)
+        with st.spinner("🧠 Gemini is analyzing (Graph, Quiz, and Summary)..."):
+            # 1. Generate Graph
             graph_data = extract_knowledge_graph(transcript_input, api_key)
+            
+            # 2. Generate Quiz
             quiz_data = generate_quiz(transcript_input, api_key)
             
+            # 3. Generate Summary (NEW)
+            summary_text = generate_summary(transcript_input, api_key)
+            
+            # Save all to session state
             st.session_state['graph_data'] = graph_data
             st.session_state['quiz_data'] = quiz_data
+            st.session_state['summary_text'] = summary_text # Store it
+            
             st.success("Analysis Complete!")
 
 # --- RESULTS DISPLAY ---
@@ -107,18 +115,18 @@ from src.pdf_generator import create_pdf
 
 if 'quiz_data' in st.session_state:
     st.divider()
-    st.subheader("3. Export")
+    st.subheader("3. Export Study Guide")
     
-    if st.button("📥 Generate PDF Study Guide"):
+    if st.button("📥 Download PDF Report"):
         with st.spinner("Compiling PDF..."):
             pdf_bytes = create_pdf(
-                st.session_state['transcript'],
+                st.session_state['summary_text'], # Pass the smart summary here!
                 st.session_state['graph_data'],
                 st.session_state['quiz_data']
             )
             
             st.download_button(
-                label="📄 Download Now",
+                label="📄 Download PDF",
                 data=pdf_bytes,
                 file_name="VidGraph_Study_Guide.pdf",
                 mime="application/pdf"
