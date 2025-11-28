@@ -3,7 +3,7 @@ import streamlit.components.v1 as components
 import os
 import re
 from dotenv import load_dotenv
-from youtube_transcript_api import YouTubeTranscriptApi
+import youtube_transcript_api
 from src.llm_engine import extract_knowledge_graph
 from src.graph_builder import visualize_knowledge_graph
 
@@ -19,15 +19,11 @@ def get_video_id(url):
         return match.group(1)
     return None
 
+
 def get_transcript_safe(video_id):
-    """
-    Tries to fetch the transcript. Returns (text, error_message).
-    If success: text is string, error_message is None.
-    If fail: text is None, error_message is string.
-    """
     try:
-        # We call the static method directly
-        transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+        # We access the class THROUGH the module to stop Python getting confused
+        transcript_list = youtube_transcript_api.YouTubeTranscriptApi.get_transcript(video_id)
         full_text = " ".join([item['text'] for item in transcript_list])
         return full_text, None
     except Exception as e:
