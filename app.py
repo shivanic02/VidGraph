@@ -1,3 +1,5 @@
+from src.extractor import get_video_id, get_transcript
+
 import streamlit as st
 import os
 from dotenv import load_dotenv
@@ -30,15 +32,31 @@ with st.sidebar:
     st.header("Input Settings")
     video_url = st.text_input("YouTube URL", placeholder="https://youtube.com/...")
     api_key = st.text_input("OpenAI API Key", type="password")
-    
+
     if st.button("Generate Graph"):
-        if not video_url or not api_key:
-            st.error("Please provide both a URL and an API Key.")
-        else:
-            with st.spinner("Processing video..."):
-                # Placeholder for future logic
-                st.success(f"Processing video: {video_url}")
-                st.info("Backend logic coming in Phase 2!")
+    if not video_url:
+        st.error("Please provide a URL.")
+    else:
+        with st.spinner("Fetching transcript..."):
+            # 1. Extract Video ID
+            video_id = get_video_id(video_url)
+
+            if not video_id:
+                st.error("Invalid YouTube URL.")
+            else:
+                # 2. Get Transcript
+                transcript_text = get_transcript(video_id)
+
+                if "Error:" in transcript_text:
+                    st.error(transcript_text)
+                else:
+                    st.success("Transcript extracted successfully!")
+                    # Debugging: Show the first 500 characters to prove it works
+                    with st.expander("View Raw Transcript"):
+                        st.write(transcript_text[:500] + "...")
+
+                    # Store in session state for the next step
+                    st.session_state['transcript'] = transcript_text
 
 # Main Content Area
 col1, col2 = st.columns([2, 1])
