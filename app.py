@@ -3,7 +3,10 @@ import streamlit.components.v1 as components
 import os
 import re
 from dotenv import load_dotenv
+
+# --- THE FIX: Import the module, not the class ---
 import youtube_transcript_api
+
 from src.llm_engine import extract_knowledge_graph
 from src.graph_builder import visualize_knowledge_graph
 
@@ -19,11 +22,15 @@ def get_video_id(url):
         return match.group(1)
     return None
 
-
 def get_transcript_safe(video_id):
+    """
+    Tries to fetch the transcript. Returns (text, error_message).
+    """
     try:
-        # We access the class THROUGH the module to stop Python getting confused
+        # --- THE FIX: Call the class from inside the module ---
         transcript_list = youtube_transcript_api.YouTubeTranscriptApi.get_transcript(video_id)
+        
+        # Join the list of dictionaries into one string
         full_text = " ".join([item['text'] for item in transcript_list])
         return full_text, None
     except Exception as e:
@@ -48,10 +55,10 @@ with st.sidebar:
         st.info("Tip: Add secrets.toml to auto-load this.")
 
     st.header("2. Video Source")
-    # Default to a known working video for demo purposes
+    # Default to a known working video
     video_url = st.text_input("YouTube URL", value="https://www.youtube.com/watch?v=OhCzX0iLnOc")
     
-    # Initialize session state for manual entry if needed
+    # Initialize session state for manual entry
     if 'manual_transcript' not in st.session_state:
         st.session_state['manual_transcript'] = ""
 
@@ -72,13 +79,14 @@ with st.sidebar:
                     text, error = get_transcript_safe(video_id)
                     
                     if text:
-                        # SUCCESS: We got it automatically
+                        # SUCCESS
                         st.session_state['transcript'] = text
+                        st.session_state['show_manual_input'] = False # Hide manual box if successful
                         st.success("Transcript fetched automatically!")
                     else:
-                        # FAILURE: Show error and ask for manual paste
+                        # FAILURE
                         st.warning(f"Auto-fetch failed ({error}). Switching to Manual Mode.")
-                        st.session_state['transcript'] = None # Reset
+                        st.session_state['transcript'] = None 
                         st.session_state['show_manual_input'] = True
 
 # --- MANUAL FALLBACK INPUT ---
@@ -97,7 +105,8 @@ if st.session_state.get('show_manual_input'):
 # --- MAIN LOGIC ---
 if 'transcript' in st.session_state and st.session_state['transcript']:
     
-    # Only run AI if we haven't already generated the graph for this specific text
+    # Check if we need to re-run the AI
+    # (We compare current text to the last text we processed)
     if 'current_processed_text' not in st.session_state or st.session_state['current_processed_text'] != st.session_state['transcript']:
         
         with st.spinner("Gemini is analyzing connections..."):
@@ -107,7 +116,6 @@ if 'transcript' in st.session_state and st.session_state['transcript']:
                 st.error(f"AI Error: {graph_data['error']}")
             else:
                 st.session_state['graph_data'] = graph_data
-                # Mark this text as processed so we don't re-run AI on refresh
                 st.session_state['current_processed_text'] = st.session_state['transcript']
 
 # --- DISPLAY RESULTS ---
