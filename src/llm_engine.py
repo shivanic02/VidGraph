@@ -12,6 +12,28 @@ def get_available_model():
         return "models/gemini-1.5-flash"
     except:
         return "models/gemini-1.5-flash"
+    
+def validate_graph(transcript, graph_data):
+    valid_nodes = []
+    valid_edges = []
+    
+    # Simple Grounding Check: Does the concept loosely appear in the text?
+    transcript_lower = transcript.lower()
+    
+    existing_ids = set()
+    
+    for node in graph_data['nodes']:
+        # Check if label exists in text (simple heuristic)
+        if node['label'].lower() in transcript_lower:
+            valid_nodes.append(node)
+            existing_ids.add(node['id'])
+            
+    # Only keep edges where both nodes exist
+    for edge in graph_data['edges']:
+        if edge['source'] in existing_ids and edge['target'] in existing_ids:
+            valid_edges.append(edge)
+            
+    return {"nodes": valid_nodes, "edges": valid_edges}
 
 def extract_knowledge_graph(transcript, api_key):
     """Generates the Knowledge Graph with Node Importance."""
