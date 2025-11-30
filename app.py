@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import google.generativeai as genai # Added for the Chatbot logic
 
 # Import our custom engines
-from src.llm_engine import extract_knowledge_graph, generate_quiz, generate_summary
+from src.llm_engine import extract_knowledge_graph, generate_quiz, generate_summary, get_available_model
 from src.graph_builder import visualize_knowledge_graph
 from src.pdf_generator import create_pdf
 
@@ -136,7 +136,10 @@ if 'graph_data' in st.session_state:
                 with st.spinner("Thinking..."):
                     try:
                         genai.configure(api_key=api_key)
-                        model = genai.GenerativeModel("gemini-1.5-flash")
+                        
+                        # Fix: Use the smart model selector instead of hardcoding
+                        model_name = get_available_model()
+                        model = genai.GenerativeModel(model_name)
                         
                         # Context Injection (RAG lite)
                         # We provide the transcript + the user question
