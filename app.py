@@ -13,28 +13,39 @@ load_dotenv()
 # --- APP CONFIGURATION ---
 st.set_page_config(page_title="VidGraph.ai", layout="wide", page_icon="🧠")
 
-# --- CUSTOM CSS: THE "LIVELY" THEME ---
+# --- CUSTOM CSS: THE "LIVELY" THEME (FIXED CONTRAST) ---
 st.markdown("""
 <style>
-    /* 1. Main Background: Subtle Gradient */
+    /* 1. Force the background to a lively gradient */
     .stApp {
-        background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
+        background: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
+    }
+
+    /* 2. CRITICAL FIX: Force all text to be dark gray/black */
+    h1, h2, h3, h4, h5, h6, p, li, span, div, label {
+        color: #2D3436 !important;
     }
     
-    /* 2. Text Area & Inputs: Clean White Cards */
+    /* 3. Make the Sidebar distinct but readable */
+    section[data-testid="stSidebar"] {
+        background-color: #f8f9fa;
+        border-right: 1px solid #e0e0e0;
+    }
+    
+    /* 4. Text Areas: Clean White Cards with Dark Text */
     .stTextArea textarea {
         font-size: 16px;
-        color: #333;
-        background-color: white;
-        border: 1px solid #ddd;
+        color: #2D3436 !important;
+        background-color: #ffffff !important;
+        border: 2px solid #dfe6e9;
         border-radius: 10px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
     
-    /* 3. Buttons: Gradient Pop */
+    /* 5. Buttons: Gradient Pop */
     div.stButton > button {
         background: linear-gradient(45deg, #FF6B6B, #FF8E53);
-        color: white;
+        color: white !important; /* Keep button text white */
         font-weight: bold;
         border: none;
         border-radius: 25px;
@@ -45,24 +56,21 @@ st.markdown("""
     div.stButton > button:hover {
         transform: scale(1.05);
         box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
-        color: white; /* Ensure text stays white on hover */
     }
     
-    /* 4. Headers: Modern Typography */
-    h1 {
-        color: #2C3E50;
-        font-family: 'Helvetica Neue', sans-serif;
-        font-weight: 800;
-        letter-spacing: -1px;
-    }
-    h2, h3 {
-        color: #34495E;
+    /* 6. Tabs styling */
+    button[data-baseweb="tab"] {
+        color: #2D3436 !important;
+        font-weight: 600;
     }
     
-    /* 5. Expander styling */
-    .streamlit-expanderHeader {
-        background-color: white;
-        border-radius: 8px;
+    /* 7. Chat Bubbles Fix */
+    .stChatMessage {
+        background-color: #ffffff;
+        border-radius: 15px;
+        padding: 15px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        margin-bottom: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -170,10 +178,7 @@ if 'graph_data' in st.session_state:
             with st.chat_message("assistant"):
                 try:
                     genai.configure(api_key=api_key)
-                    # Fix: Use the smart model selector instead of hardcoding
-                    model_name = get_available_model()
-                    model = genai.GenerativeModel(model_name)
-                    
+                    model = genai.GenerativeModel(get_available_model())
                     full_prompt = f"Context: {st.session_state['transcript'][:30000]}\n\nQuestion: {prompt}"
                     response = model.generate_content(full_prompt)
                     st.markdown(response.text)
