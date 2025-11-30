@@ -6,8 +6,8 @@ def visualize_knowledge_graph(data):
     """
     Generates the HTML for the graph with:
     1. Multi-line Labels (Full text, wrapped nicely)
-    2. Increased Spacing (Physics adjustment)
-    3. User-Friendly Tooltips (Relevance %)
+    2. aggressive 'Avoid Overlap' physics
+    3. 'Relevance: 10%' Tooltips
     """
     
     # --- STEP 1: CALCULATE IMPORTANCE (PageRank) ---
@@ -37,18 +37,17 @@ def visualize_knowledge_graph(data):
             
         size = 10 + (score * 80)
         
-        # LABEL FIX: Wrap text for the visual node (max 20 chars per line)
+        # LABEL FIX: Wrap text nicely
         full_label = node['label']
         wrapped_label = "\n".join(textwrap.wrap(full_label, width=20)) 
         
-        # TOOLTIP FIX: Show Full Text + Percentage Score
-        # "{:.0%}" converts 0.10 to "10%"
+        # TOOLTIP FIX: "Relevance: 10%"
         hover_text = f"{full_label}\nRelevance: {score:.0%}"
         
         net.add_node(
             node['id'], 
             label=wrapped_label, 
-            title=hover_text,  # <--- UPDATED TOOLTIP
+            title=hover_text,
             color=color, 
             size=size,
             shape="dot",
@@ -59,18 +58,27 @@ def visualize_knowledge_graph(data):
     for edge in data['edges']:
         net.add_edge(edge['source'], edge['target'], color="#cccccc")
     
-    # PHYSICS FIX: Spacing to prevent overlap
-    net.repulsion(
-        node_distance=250,
-        spring_length=250,
-        central_gravity=0.1
-    )
+    # --- PHYSICS FIX: FORCE SEPARATION ---
+    # We use explicit options to turn on 'avoidOverlap'
+    net.set_options("""
+    var options = {
+      "physics": {
+        "barnesHut": {
+          "gravitationalConstant": -30000,
+          "centralGravity": 0.3,
+          "springLength": 300,
+          "springConstant": 0.05,
+          "damping": 0.09,
+          "avoidOverlap": 1
+        }
+      }
+    }
+    """)
     
-    # --- STEP 3: INJECT CUSTOM JAVASCRIPT ---
+    # --- STEP 3: INJECT FULLSCREEN BUTTON ---
     try:
         html_string = net.generate_html()
         
-        # Fullscreen Button Logic
         fullscreen_code = """
         <style>
             #fullscreen-btn {
