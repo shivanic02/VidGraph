@@ -3,7 +3,7 @@ import google.generativeai as genai
 import re
 
 def get_available_model():
-    """Finds a valid Gemini model automatically based on your API key permissions."""
+    """Finds a valid Gemini model automatically."""
     try:
         for m in genai.list_models():
             if 'generateContent' in m.supported_generation_methods:
@@ -14,15 +14,22 @@ def get_available_model():
         return "models/gemini-1.5-flash"
 
 def extract_knowledge_graph(transcript, api_key):
-    """Generates the Knowledge Graph nodes and edges."""
+    """Generates a fully interconnected Knowledge Graph."""
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(get_available_model())
         
+        # IMPROVED PROMPT: Explicitly asks for cross-connections
         prompt = f"""
         You are a Knowledge Graph creator. Analyze the text and identify:
         1. "Core Concepts" (The main 3-5 topics).
         2. "Sub Concepts" (The details supporting them).
+        3. "Relationships" (Connect concepts logically).
+        
+        CRITICAL RULE: Ensure the graph is INTERCONNECTED. 
+        - Find connections between different Core Concepts.
+        - Find connections between Sub Concepts of different parents.
+        - Do not create isolated clusters.
         
         Transcript: 
         {transcript[:30000]} 
@@ -30,11 +37,12 @@ def extract_knowledge_graph(transcript, api_key):
         Output STRICTLY JSON (no markdown):
         {{
           "nodes": [
-             {{"id": "Main Topic", "label": "Main Topic", "type": "core"}},
-             {{"id": "Sub Detail", "label": "Sub Detail", "type": "sub"}}
+             {{"id": "Concept A", "label": "Concept A", "type": "core"}},
+             {{"id": "Concept B", "label": "Concept B", "type": "sub"}}
           ],
           "edges": [
-             {{"source": "Main Topic", "target": "Sub Detail", "label": "includes"}}
+             {{"source": "Concept A", "target": "Concept B", "label": "includes"}},
+             {{"source": "Concept B", "target": "Concept C", "label": "relates to"}}
           ]
         }}
         """
@@ -63,7 +71,7 @@ def generate_quiz(transcript, api_key):
                 "question": "Question text here?",
                 "options": ["Full text of Option A", "Full text of Option B", "Full text of Option C", "Full text of Option D"],
                 "answer": "Full text of Option B",
-                "explanation": "Brief explanation of why B is correct."
+                "explanation": "Brief explanation."
             }}
         ]
         
