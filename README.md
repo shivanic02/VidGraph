@@ -66,7 +66,7 @@ We don't just visualize data; we analyze it.
 
 1. **Clone the repo**
    ```bash
-   git clone [https://github.com/yourusername/VidGraph.git](https://github.com/yourusername/VidGraph.git)
+   git clone [https://github.com/shivanic02/VidGraph.git](https://github.com/yourusername/VidGraph.git)
    cd VidGraph
 
 2. **Install dependencies**
