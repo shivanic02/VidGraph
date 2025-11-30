@@ -4,3 +4,4 @@ pyvis
 python-dotenv
 watchdog
 networkx
+fpdf
