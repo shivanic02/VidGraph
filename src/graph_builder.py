@@ -1,52 +1,77 @@
+import networkx as nx
 from pyvis.network import Network
 
 def visualize_knowledge_graph(data):
-    """Generates the HTML for the graph with hierarchy colors and a Fullscreen button."""
+    """
+    Generates the HTML for the graph with:
+    1. PageRank Math (Node sizing & Tooltips)
+    2. Fullscreen Button (Custom JS)
+    3. Dark Mode Styling
+    """
     
-    # 1. Build the Network
-    # We set width to 100% so it fills the container (or fullscreen mode)
+    # --- STEP 1: CALCULATE IMPORTANCE (PageRank) ---
+    # We use NetworkX to calculate the mathematical 'weight' of nodes
+    nx_graph = nx.Graph()
+    
+    # Add nodes and edges to the math engine
+    for node in data['nodes']:
+        nx_graph.add_node(node['id'], label=node['label'], type=node.get('type'))
+    for edge in data['edges']:
+        nx_graph.add_edge(edge['source'], edge['target'])
+        
+    try:
+        # Calculate PageRank (returns a dictionary of {node_id: score})
+        pagerank_scores = nx.pagerank(nx_graph)
+    except:
+        # Fallback if graph is empty or disconnected
+        pagerank_scores = {node['id']: 0.1 for node in data['nodes']}
+
+    # --- STEP 2: BUILD VISUAL NETWORK ---
+    # Initialize PyVis (cdn_resources='remote' prevents downloading the local lib folder)
     net = Network(height="600px", width="100%", bgcolor="#1E1E1E", font_color="white", cdn_resources='remote')
     
     for node in data['nodes']:
-        # Logic: Highlight Core concepts
+        # Get the math score (default to 0.1 if missing)
+        score = pagerank_scores.get(node['id'], 0.1)
+        
+        # Color Logic: Differentiate Core vs Sub concepts
         if node.get('type') == 'core':
             color = "#FFD700"  # Gold
-            size = 25
-            shape = "dot"
         else:
-            color = "#97C2FC"  # Blue
-            size = 15
-            shape = "dot"
+            color = "#97C2FC"  # Light Blue
             
+        # Size Logic: Base size + (Score * Multiplier)
+        # This makes important nodes physically larger
+        size = 10 + (score * 80)
+        
         net.add_node(
             node['id'], 
             label=node['label'], 
             color=color, 
             size=size,
-            shape=shape,
-            title=node['id']
+            shape="dot",
+            title=f"Importance: {score:.2f}" # Tooltip on hover
         )
     
     for edge in data['edges']:
         net.add_edge(edge['source'], edge['target'], title=edge['label'], color="#555555")
     
+    # Physics settings for a nice "floating" layout
     net.repulsion(node_distance=150, spring_length=150)
     
-    # 2. Generate Base HTML
+    # --- STEP 3: INJECT CUSTOM JAVASCRIPT ---
     try:
-        # We generate the HTML string in memory
+        # Generate the standard HTML string in memory
         html_string = net.generate_html()
         
-        # 3. INJECT CUSTOM JAVASCRIPT FOR FULLSCREEN
-        # We insert a style and button right before the closing </body> tag
+        # Define the custom Button and Script
         fullscreen_code = """
         <style>
-            /* Style the button to look like a floating tool */
             #fullscreen-btn {
                 position: absolute;
                 top: 10px;
                 right: 10px;
-                z-index: 1000; /* Ensure it sits on top of the graph */
+                z-index: 1000;
                 background-color: #262730;
                 color: white;
                 border: 1px solid #4B4B4B;
@@ -69,7 +94,7 @@ def visualize_knowledge_graph(data):
         <script>
             function toggleFullScreen() {
                 var doc = window.document;
-                // 'mynetwork' is the default ID used by PyVis for the graph container
+                // 'mynetwork' is the ID PyVis assigns to the graph container
                 var docEl = doc.getElementById('mynetwork'); 
 
                 var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
@@ -85,7 +110,7 @@ def visualize_knowledge_graph(data):
         </script>
         """
         
-        # Inject the code into the HTML
+        # Inject our code right before the body closes
         html_string = html_string.replace("</body>", f"{fullscreen_code}</body>")
         
         return html_string
