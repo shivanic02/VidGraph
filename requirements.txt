@@ -3,3 +3,4 @@ google-generativeai
 pyvis
 python-dotenv
 watchdog
+networkx
