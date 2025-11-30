@@ -31,5 +31,5 @@ Instead of reading a wall of text, you explore a dynamic network of concepts, se
 
 1. **Clone the repo**
    ```bash
-   git clone [https://github.com/yourusername/VidGraph.git](https://github.com/yourusername/VidGraph.git)
+   git clone [https://github.com/shivanic02/VidGraph.git](https://github.com/yourusername/VidGraph.git)
    cd VidGraph
