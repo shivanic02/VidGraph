@@ -13,45 +13,44 @@ load_dotenv()
 # --- APP CONFIGURATION ---
 st.set_page_config(page_title="VidGraph.ai", layout="wide", page_icon="🧠")
 
-# --- CUSTOM CSS: THE "LIVELY" THEME (FIXED CONTRAST) ---
+# --- CUSTOM CSS: DARK THEME ---
 st.markdown("""
 <style>
-    /* 1. Force the background to a greish color */
+    /* 1. Force the background to Blackish-Grey */
     .stApp {
-        background-color: #e8e8e8;
+        background-color: #1E1E1E;
     }
 
-    /* 2. CRITICAL FIX: Force all text to be dark gray/black */
+    /* 2. CRITICAL FIX: Force all text to be White/Light for contrast */
     h1, h2, h3, h4, h5, h6, p, li, span, div, label {
-        color: #2D3436 !important;
+        color: #FAFAFA !important;
     }
     
-    /* 3. Make the Sidebar distinct but readable */
+    /* 3. Sidebar: Slightly lighter dark grey for separation */
     section[data-testid="stSidebar"] {
-        background-color: #f8f9fa;
-        border-right: 1px solid #e0e0e0;
+        background-color: #262730;
+        border-right: 1px solid #444;
     }
     
-    /* 4. Text Areas: Clean White Cards with Dark Text */
+    /* 4. Text Areas: Dark Cards with Light Text */
     .stTextArea textarea {
         font-size: 16px;
-        color: #2D3436 !important;
-        background-color: #ffffff !important;
-        border: 2px solid #dfe6e9;
+        color: #FAFAFA !important;
+        background-color: #333333 !important;
+        border: 1px solid #555;
         border-radius: 10px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
     
-    /* 5. Buttons: Gradient Pop */
+    /* 5. Buttons: Keep the lively gradient */
     div.stButton > button {
         background: linear-gradient(45deg, #FF6B6B, #FF8E53);
-        color: white !important; /* Keep button text white */
+        color: white !important;
         font-weight: bold;
         border: none;
         border-radius: 25px;
         padding: 10px 25px;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     }
     div.stButton > button:hover {
         transform: scale(1.05);
@@ -60,17 +59,23 @@ st.markdown("""
     
     /* 6. Tabs styling */
     button[data-baseweb="tab"] {
-        color: #2D3436 !important;
+        color: #FAFAFA !important;
         font-weight: 600;
     }
     
-    /* 7. Chat Bubbles Fix */
+    /* 7. Chat Bubbles Fix for Dark Mode */
     .stChatMessage {
-        background-color: #ffffff;
+        background-color: #262730;
         border-radius: 15px;
         padding: 15px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        border: 1px solid #444;
         margin-bottom: 10px;
+    }
+    
+    /* 8. Expander Header Fix */
+    .streamlit-expanderHeader {
+        background-color: #262730;
+        color: #FAFAFA !important;
     }
 </style>
 """, unsafe_allow_html=True)
