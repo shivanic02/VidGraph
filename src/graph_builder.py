@@ -5,10 +5,9 @@ import textwrap
 def visualize_knowledge_graph(data):
     """
     Generates the HTML for the graph with:
-    1. Truncated Labels (Fixes overlapping)
+    1. Multi-line Labels (Full text, wrapped nicely)
     2. Increased Spacing (Physics adjustment)
-    3. Full Hover Text
-    4. PageRank Math & Fullscreen Button
+    3. PageRank Math & Fullscreen Button
     """
     
     # --- STEP 1: CALCULATE IMPORTANCE (PageRank) ---
@@ -32,23 +31,21 @@ def visualize_knowledge_graph(data):
         
         # Color Logic
         if node.get('type') == 'core':
-            color = "#FF6B6B"  # Vibrant Coral (Core)
+            color = "#FF6B6B"  # Vibrant Coral
         else:
-            color = "#4ECDC4"  # Fresh Teal (Sub)
+            color = "#4ECDC4"  # Fresh Teal
             
         size = 10 + (score * 80)
         
-        # LABEL FIX: Truncate long text to 20 characters so it fits visually
+        # LABEL FIX: Wrap text instead of shortening it
+        # This keeps the full meaning but makes the node "taller" rather than "wider"
         full_label = node['label']
-        short_label = textwrap.shorten(full_label, width=20, placeholder="...")
-        
-        # HOVER FIX: Show the FULL text + score when hovering
-        hover_text = f"{full_label}\n(Importance: {score:.2f})"
+        wrapped_label = "\n".join(textwrap.wrap(full_label, width=20)) 
         
         net.add_node(
             node['id'], 
-            label=short_label, # Visible text (short)
-            title=hover_text,  # Tooltip text (full)
+            label=wrapped_label, # Shows full text on multiple lines
+            title=f"Importance: {score:.2f}",
             color=color, 
             size=size,
             shape="dot",
@@ -59,11 +56,11 @@ def visualize_knowledge_graph(data):
     for edge in data['edges']:
         net.add_edge(edge['source'], edge['target'], color="#cccccc")
     
-    # PHYSICS FIX: Increase distance to prevent overlap
+    # PHYSICS FIX: Increase distance significantly to handle multi-line text
     net.repulsion(
-        node_distance=200,  # Push nodes further apart (was 120)
-        spring_length=200,  # Make edges longer (was 120)
-        central_gravity=0.1 # Reduce gravity so they spread out more
+        node_distance=250,  # Push nodes much further apart
+        spring_length=250,  # Make edges longer
+        central_gravity=0.1 # Relax gravity
     )
     
     # --- STEP 3: INJECT CUSTOM JAVASCRIPT ---
