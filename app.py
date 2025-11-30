@@ -1,9 +1,9 @@
 import streamlit as st
 import streamlit.components.v1 as components
 from dotenv import load_dotenv
-import google.generativeai as genai # Added for the Chatbot logic
+import google.generativeai as genai 
 
-# Import our custom engines
+# Import engines
 from src.llm_engine import extract_knowledge_graph, generate_quiz, generate_summary, get_available_model
 from src.graph_builder import visualize_knowledge_graph
 from src.pdf_generator import create_pdf
@@ -13,171 +13,183 @@ load_dotenv()
 # --- APP CONFIGURATION ---
 st.set_page_config(page_title="VidGraph.ai", layout="wide", page_icon="🧠")
 
+# --- CUSTOM CSS: THE "LIVELY" THEME ---
 st.markdown("""
 <style>
-    .stTextArea textarea { font-size: 14px; }
-    div[data-testid="stExpander"] details summary { font-weight: bold; }
+    /* 1. Main Background: Subtle Gradient */
+    .stApp {
+        background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
+    }
+    
+    /* 2. Text Area & Inputs: Clean White Cards */
+    .stTextArea textarea {
+        font-size: 16px;
+        color: #333;
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    
+    /* 3. Buttons: Gradient Pop */
+    div.stButton > button {
+        background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+        color: white;
+        font-weight: bold;
+        border: none;
+        border-radius: 25px;
+        padding: 10px 25px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    }
+    div.stButton > button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        color: white; /* Ensure text stays white on hover */
+    }
+    
+    /* 4. Headers: Modern Typography */
+    h1 {
+        color: #2C3E50;
+        font-family: 'Helvetica Neue', sans-serif;
+        font-weight: 800;
+        letter-spacing: -1px;
+    }
+    h2, h3 {
+        color: #34495E;
+    }
+    
+    /* 5. Expander styling */
+    .streamlit-expanderHeader {
+        background-color: white;
+        border-radius: 8px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
     st.markdown("## ⚙️ Settings")
+    
     if "GOOGLE_API_KEY" in st.secrets:
         api_key = st.secrets["GOOGLE_API_KEY"]
-        st.success("✅ Gemini Key Loaded")
+        st.success("✅ Connected")
     else:
         api_key = st.text_input("Gemini API Key", type="password")
 
-    st.divider()
-    st.markdown("### ℹ️ How to use")
-    st.info("Paste any text/transcript to generate a Knowledge Graph, Quiz, and Chat bot.")
+    st.markdown("---")
+    st.markdown("### 🌟 About")
+    st.info("VidGraph turns dense text into living knowledge maps.")
 
-# --- MAIN HEADER ---
-st.markdown('<h1 style="color: #4B4B4B;">VidGraph.ai 🧠</h1>', unsafe_allow_html=True)
-st.caption("Advanced Learning Companion: Knowledge Graphs + AI Quizzes + Chat")
+# --- MAIN CONTENT ---
+st.title("VidGraph.ai")
+st.markdown("### 🧠 The AI Study Companion")
+st.caption("Paste a transcript below to generate a Knowledge Graph, Quiz, and Study Guide.")
 
 # --- INPUT SECTION ---
-transcript_input = st.text_area("Paste Transcript / Text:", height=150)
-generate_btn = st.button("🚀 Analyze & Generate", type="primary")
+transcript_input = st.text_area(
+    "📥 Input Source", 
+    height=200, 
+    placeholder="Paste your video transcript, lecture notes, or article here..."
+)
+
+col1, col2 = st.columns([1, 5])
+with col1:
+    generate_btn = st.button("✨ Generate", type="primary")
 
 # --- PROCESSING LOGIC ---
 if generate_btn:
     if not api_key:
-        st.error("⚠️ Please enter a Google API Key.")
+        st.error("⚠️ Please enter a Google API Key in the sidebar.")
     elif not transcript_input:
-        st.error("⚠️ Please paste text first.")
+        st.warning("⚠️ Please paste some text first.")
     else:
         st.session_state['transcript'] = transcript_input
         
-        with st.spinner("🧠 Gemini is analyzing (Graph, Quiz, and Summary)..."):
-            # 1. Generate Graph
+        with st.spinner("🤖 AI is analyzing concepts..."):
+            # Parallel Execution
             graph_data = extract_knowledge_graph(transcript_input, api_key)
-            
-            # 2. Generate Quiz
             quiz_data = generate_quiz(transcript_input, api_key)
-            
-            # 3. Generate Summary
             summary_text = generate_summary(transcript_input, api_key)
             
-            # Save all to session state
             st.session_state['graph_data'] = graph_data
             st.session_state['quiz_data'] = quiz_data
             st.session_state['summary_text'] = summary_text
+            st.session_state.messages = [] # Reset chat
             
-            # Clear chat history when new text is analyzed
-            st.session_state.messages = []
-            
-            st.success("Analysis Complete!")
+            st.rerun() # Force refresh to show results
 
 # --- RESULTS DISPLAY ---
 if 'graph_data' in st.session_state:
     
-    # Create 3 Tabs now
-    tab1, tab2, tab3 = st.tabs(["📊 Knowledge Graph", "📝 Practice Quiz", "💬 Chat with Video"])
+    st.markdown("---")
     
-    # TAB 1: THE GRAPH
+    # TABS INTERFACE
+    tab1, tab2, tab3 = st.tabs(["🗺️ Concept Map", "📝 Quiz", "💬 AI Chat"])
+    
     with tab1:
-        st.subheader("Interactive Concept Map")
-        st.caption("🟡 Gold = Core Concepts | 🔵 Blue = Sub-concepts")
-        
+        st.subheader("Interactive Knowledge Graph")
         if "error" in st.session_state['graph_data']:
             st.error(st.session_state['graph_data']['error'])
         else:
+            # Render the updated colorful graph
             html_graph = visualize_knowledge_graph(st.session_state['graph_data'])
             components.html(html_graph, height=600, scrolling=True)
+            st.caption("Tip: Click 'Fullscreen' inside the graph for a better view.")
 
-    # TAB 2: THE QUIZ
     with tab2:
-        st.subheader("Test Your Knowledge")
+        st.subheader("✅ Practice Quiz")
         quiz_data = st.session_state.get('quiz_data')
-        
         if not quiz_data or "error" in quiz_data:
-            st.error("Could not generate quiz.")
+            st.warning("Quiz generation failed. Try a longer text.")
         else:
             for i, q in enumerate(quiz_data):
-                st.markdown(f"**Q{i+1}: {q['question']}**")
-                user_answer = st.radio(f"Select an answer for Q{i+1}:", q['options'], key=f"q{i}")
-                
-                if st.button(f"Check Answer {i+1}", key=f"btn{i}"):
-                    # Clean strings to avoid invisible character bugs
-                    clean_user = user_answer.strip()
-                    clean_correct = q['answer'].strip()
-                    
-                    if clean_user == clean_correct:
-                        st.success(f"✅ Correct! {q.get('explanation', '')}")
-                    else:
-                        st.error(f"❌ Incorrect. The correct answer is: {q['answer']}")
-                st.divider()
+                with st.expander(f"Question {i+1}: {q['question']}", expanded=True):
+                    user_answer = st.radio("Choose answer:", q['options'], key=f"q{i}")
+                    if st.button("Check", key=f"btn{i}"):
+                        if user_answer.strip() == q['answer'].strip():
+                            st.success(f"Correct! {q.get('explanation', '')}")
+                        else:
+                            st.error(f"Wrong. Correct: {q['answer']}")
 
-    # TAB 3: THE RAG CHATBOT (New Feature)
     with tab3:
-        st.subheader("Chat with the Transcript")
-        st.caption("Ask questions specifically about the video content.")
-
-        # Initialize chat history if empty
+        st.subheader("💬 Chat with Document")
+        
         if "messages" not in st.session_state:
             st.session_state.messages = []
 
-        # Display chat history
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-        # Chat Input
-        if prompt := st.chat_input("Ask something about the video..."):
-            # 1. Add User Message to History
+        if prompt := st.chat_input("Ask about the transcript..."):
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
 
-            # 2. Generate Answer using Gemini
             with st.chat_message("assistant"):
-                with st.spinner("Thinking..."):
-                    try:
-                        genai.configure(api_key=api_key)
-                        
-                        # Fix: Use the smart model selector instead of hardcoding
-                        model_name = get_available_model()
-                        model = genai.GenerativeModel(model_name)
-                        
-                        # Context Injection (RAG lite)
-                        # We provide the transcript + the user question
-                        full_prompt = f"""
-                        You are a helpful AI teaching assistant. 
-                        Answer the user's question strictly based on the following video transcript.
-                        
-                        TRANSCRIPT:
-                        {st.session_state['transcript'][:30000]}
-                        
-                        QUESTION:
-                        {prompt}
-                        """
-                        
-                        response = model.generate_content(full_prompt)
-                        st.markdown(response.text)
-                        
-                        # 3. Add AI Response to History
-                        st.session_state.messages.append({"role": "assistant", "content": response.text})
-                    except Exception as e:
-                        st.error(f"Error: {e}")
+                try:
+                    genai.configure(api_key=api_key)
+                    # Fix: Use the smart model selector instead of hardcoding
+                    model_name = get_available_model()
+                    model = genai.GenerativeModel(model_name)
+                    
+                    full_prompt = f"Context: {st.session_state['transcript'][:30000]}\n\nQuestion: {prompt}"
+                    response = model.generate_content(full_prompt)
+                    st.markdown(response.text)
+                    st.session_state.messages.append({"role": "assistant", "content": response.text})
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
-# --- EXPORT SECTION ---
-if 'quiz_data' in st.session_state:
-    st.divider()
-    st.subheader("3. Export Study Guide")
-    
-    if st.button("📥 Download PDF Report"):
-        with st.spinner("Compiling PDF..."):
-            pdf_bytes = create_pdf(
-                st.session_state['summary_text'],
-                st.session_state['graph_data'],
-                st.session_state['quiz_data']
-            )
-            
-            st.download_button(
-                label="📄 Download PDF",
-                data=pdf_bytes,
-                file_name="VidGraph_Study_Guide.pdf",
-                mime="application/pdf"
-            )
+    # --- EXPORT SECTION ---
+    st.markdown("---")
+    col_a, col_b = st.columns([4, 1])
+    with col_b:
+        if st.button("📥 Export PDF"):
+            with st.spinner("Generating PDF..."):
+                pdf_bytes = create_pdf(
+                    st.session_state['summary_text'],
+                    st.session_state['graph_data'],
+                    st.session_state['quiz_data']
+                )
+                st.download_button("Click to Download", pdf_bytes, "VidGraph_Study_Guide.pdf", "application/pdf")
