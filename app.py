@@ -16,9 +16,9 @@ st.set_page_config(page_title="VidGraph.ai", layout="wide", page_icon="🧠")
 # --- CUSTOM CSS: THE "LIVELY" THEME (FIXED CONTRAST) ---
 st.markdown("""
 <style>
-    /* 1. Force the background to a lively gradient */
+    /* 1. Force the background to a greish color */
     .stApp {
-        background: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
+        background-color: #e8e8e8;
     }
 
     /* 2. CRITICAL FIX: Force all text to be dark gray/black */
