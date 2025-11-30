@@ -1,63 +1,109 @@
-from fpdf import FPDF
+import networkx as nx
+from pyvis.network import Network
 
-class PDF(FPDF):
-    def header(self):
-        self.set_font('Arial', 'B', 15)
-        self.cell(0, 10, 'VidGraph.ai - Study Guide', 0, 1, 'C')
-        self.ln(10)
-
-    def chapter_title(self, title):
-        self.set_font('Arial', 'B', 12)
-        self.set_fill_color(200, 220, 255)
-        self.cell(0, 10, title, 0, 1, 'L', 1)
-        self.ln(4)
-
-    def chapter_body(self, body):
-        self.set_font('Arial', '', 11)
-        # Latin-1 fix: Replace characters that might crash the PDF generator
-        safe_body = body.encode('latin-1', 'replace').decode('latin-1')
-        self.multi_cell(0, 6, safe_body)
-        self.ln()
-
-def create_pdf(summary_text, graph_data, quiz_data):
-    pdf = PDF()
-    pdf.add_page()
+def visualize_knowledge_graph(data):
+    """
+    Generates the HTML for the graph with:
+    1. PageRank Math (Node sizing & Tooltips)
+    2. Fullscreen Button (Custom JS)
+    3. Modern Light Theme (White BG, Vibrant Nodes)
+    """
     
-    # 1. Executive Summary
-    pdf.chapter_title("1. Executive Summary")
-    pdf.chapter_body(summary_text)
+    # --- STEP 1: CALCULATE IMPORTANCE (PageRank) ---
+    nx_graph = nx.Graph()
+    for node in data['nodes']:
+        nx_graph.add_node(node['id'], label=node['label'], type=node.get('type'))
+    for edge in data['edges']:
+        nx_graph.add_edge(edge['source'], edge['target'])
+        
+    try:
+        pagerank_scores = nx.pagerank(nx_graph)
+    except:
+        pagerank_scores = {node['id']: 0.1 for node in data['nodes']}
+
+    # --- STEP 2: BUILD VISUAL NETWORK ---
+    # THEME UPDATE: White background, Dark text
+    net = Network(height="600px", width="100%", bgcolor="#ffffff", font_color="#333333", cdn_resources='remote')
     
-    # 2. Key Concepts (Graph Data)
-    pdf.chapter_title("2. Key Concepts (Knowledge Graph)")
-    for node in graph_data['nodes']:
-        label = node['label']
-        # FIX: Use safe characters instead of Unicode symbols
-        prefix = "[CORE]" if node.get('type') == 'core' else "-"
-        pdf.chapter_body(f"{prefix} {label}")
+    for node in data['nodes']:
+        score = pagerank_scores.get(node['id'], 0.1)
         
-    # 3. Practice Quiz
-    pdf.add_page()
-    pdf.chapter_title("3. Practice Quiz")
+        # COLOR UPDATE: Lively "Candy" Palette
+        if node.get('type') == 'core':
+            color = "#FF6B6B"  # Vibrant Coral (Core)
+        else:
+            color = "#4ECDC4"  # Fresh Teal (Sub)
+            
+        size = 10 + (score * 80)
+        
+        net.add_node(
+            node['id'], 
+            label=node['label'], 
+            color=color, 
+            size=size,
+            shape="dot",
+            title=f"Importance: {score:.2f}",
+            borderWidth=2,
+            font={'size': 14, 'face': 'sans-serif'}
+        )
     
-    for i, q in enumerate(quiz_data):
-        pdf.set_font('Arial', 'B', 11)
-        # Sanitize question text
-        q_text = q['question'].encode('latin-1', 'replace').decode('latin-1')
-        pdf.multi_cell(0, 6, f"Q{i+1}: {q_text}")
+    for edge in data['edges']:
+        net.add_edge(edge['source'], edge['target'], title=edge['label'], color="#cccccc")
+    
+    net.repulsion(node_distance=120, spring_length=120)
+    
+    # --- STEP 3: INJECT CUSTOM JAVASCRIPT ---
+    try:
+        html_string = net.generate_html()
         
-        pdf.set_font('Arial', '', 11)
-        for opt in q['options']:
-            # Sanitize option text
-            opt_clean = opt.encode('latin-1', 'replace').decode('latin-1')
-            pdf.cell(0, 6, f"   - {opt_clean}", 0, 1)
-        pdf.ln(2)
+        # Update Button Styling for Light Mode
+        fullscreen_code = """
+        <style>
+            #fullscreen-btn {
+                position: absolute;
+                top: 15px;
+                right: 15px;
+                z-index: 1000;
+                background-color: white;
+                color: #333;
+                border: 2px solid #ddd;
+                padding: 8px 15px;
+                cursor: pointer;
+                border-radius: 8px;
+                font-family: 'Segoe UI', sans-serif;
+                font-weight: 600;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                transition: all 0.2s ease;
+            }
+            #fullscreen-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+                border-color: #FF6B6B;
+                color: #FF6B6B;
+            }
+        </style>
         
-    # 4. Answer Key
-    pdf.ln(10)
-    pdf.set_font('Arial', 'I', 10)
-    pdf.cell(0, 10, "--- Answer Key ---", 0, 1)
-    for i, q in enumerate(quiz_data):
-        ans_clean = q['answer'].encode('latin-1', 'replace').decode('latin-1')
-        pdf.cell(0, 6, f"Q{i+1}: {ans_clean}", 0, 1)
+        <button id="fullscreen-btn" onclick="toggleFullScreen()">⛶ Fullscreen</button>
         
-    return pdf.output(dest='S').encode('latin-1')
+        <script>
+            function toggleFullScreen() {
+                var doc = window.document;
+                var docEl = doc.getElementById('mynetwork'); 
+
+                var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+                var cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+                if(!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+                    requestFullScreen.call(docEl);
+                }
+                else {
+                    cancelFullScreen.call(doc);
+                }
+            }
+        </script>
+        """
+        html_string = html_string.replace("</body>", f"{fullscreen_code}</body>")
+        return html_string
+        
+    except Exception as e:
+        return f"<div>Error generating graph: {e}</div>"
