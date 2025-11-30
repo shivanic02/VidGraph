@@ -3,7 +3,7 @@ import google.generativeai as genai
 import re
 
 def get_available_model():
-    """Finds a valid Gemini model automatically."""
+    """Finds a valid Gemini model automatically based on your API key permissions."""
     try:
         for m in genai.list_models():
             if 'generateContent' in m.supported_generation_methods:
@@ -12,31 +12,9 @@ def get_available_model():
         return "models/gemini-1.5-flash"
     except:
         return "models/gemini-1.5-flash"
-    
-def validate_graph(transcript, graph_data):
-    valid_nodes = []
-    valid_edges = []
-    
-    # Simple Grounding Check: Does the concept loosely appear in the text?
-    transcript_lower = transcript.lower()
-    
-    existing_ids = set()
-    
-    for node in graph_data['nodes']:
-        # Check if label exists in text (simple heuristic)
-        if node['label'].lower() in transcript_lower:
-            valid_nodes.append(node)
-            existing_ids.add(node['id'])
-            
-    # Only keep edges where both nodes exist
-    for edge in graph_data['edges']:
-        if edge['source'] in existing_ids and edge['target'] in existing_ids:
-            valid_edges.append(edge)
-            
-    return {"nodes": valid_nodes, "edges": valid_edges}
 
 def extract_knowledge_graph(transcript, api_key):
-    """Generates the Knowledge Graph with Node Importance."""
+    """Generates the Knowledge Graph nodes and edges."""
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(get_available_model())
@@ -68,7 +46,7 @@ def extract_knowledge_graph(transcript, api_key):
         return {"error": f"Graph Error: {str(e)}"}
 
 def generate_quiz(transcript, api_key):
-    """Generates a 3-question quiz from the text."""
+    """Generates a 3-question quiz."""
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(get_available_model())
@@ -85,11 +63,11 @@ def generate_quiz(transcript, api_key):
                 "question": "Question text here?",
                 "options": ["Full text of Option A", "Full text of Option B", "Full text of Option C", "Full text of Option D"],
                 "answer": "Full text of Option B",
-                "explanation": "Explanation here..."
+                "explanation": "Brief explanation of why B is correct."
             }}
         ]
         
-        IMPORTANT RULE: The "answer" field must MATCH EXACTLY one of the strings in the "options" list. Do not just say "Option A", give the full text.
+        IMPORTANT: The "answer" field must MATCH EXACTLY one of the strings in the "options" list.
         """
         response = model.generate_content(prompt)
         clean_text = response.text.replace("```json", "").replace("```", "").strip()
@@ -97,24 +75,16 @@ def generate_quiz(transcript, api_key):
 
     except Exception as e:
         return [{"error": str(e)}]
-    
-
-# Add this to src/llm_engine.py
 
 def generate_summary(transcript, api_key):
-    """Generates a concise executive summary of the entire text."""
+    """Generates a concise executive summary."""
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(get_available_model())
         
         prompt = f"""
-        You are an expert technical writer. Write a high-level executive summary of the following transcript.
-        
-        Rules:
-        1. Cover the ENTIRE content (start to finish).
-        2. Do not just cut off the text; synthesize the main ideas.
-        3. Use bullet points for readability.
-        4. Keep it under 250 words.
+        Write a high-level executive summary of the following transcript.
+        Use bullet points for readability. Keep it under 250 words.
         
         Transcript:
         {transcript[:30000]}
