@@ -15,9 +15,10 @@ def get_available_model():
 
 def get_persona_instruction(persona):
     """Returns the system instruction based on the selected persona."""
-    if persona == "👶 Explain Like I'm 5":
+    # --- UPDATED LOGIC FOR NEW NAMES ---
+    if "Beginner" in persona:
         return "Explain simply, use analogies, avoid jargon. Keep it fun and easy to understand."
-    elif persona == "🧐 Academic / Expert":
+    elif "Expert" in persona:
         return "Use precise technical terminology, focus on depth, nuance, and advanced concepts. Be formal."
     else: # Standard
         return "Be clear, concise, and professional."
