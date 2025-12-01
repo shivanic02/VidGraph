@@ -16,11 +16,12 @@ load_dotenv()
 st.set_page_config(page_title="VidGraph.ai", layout="wide", page_icon="🧠")
 
 # --- CUSTOM CSS: PREMIUM DARK THEME ---
+# --- CUSTOM CSS: PREMIUM DARK THEME WITH ORANGE BUTTONS ---
 st.markdown("""
 <style>
     /* Dark Background */
     .stApp {
-        background-color: #121212;
+        background-color: #1E1E1E;
     }
 
     /* Text Colors - Force Light/White */
@@ -30,8 +31,8 @@ st.markdown("""
     
     /* Sidebar */
     section[data-testid="stSidebar"] {
-        background-color: #1E1E1E;
-        border-right: 1px solid #333;
+        background-color: #262730;
+        border-right: 1px solid #444;
     }
     
     /* Inputs */
@@ -41,19 +42,21 @@ st.markdown("""
         border: 1px solid #444;
     }
     
-    /* Gradient Buttons */
+    /* ORANGE GRADIENT BUTTONS (Restored) */
     div.stButton > button {
-        background: linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%);
-        color: #000 !important;
+        background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+        color: white !important;
         font-weight: bold;
         border: none;
         padding: 10px 25px;
-        border-radius: 8px;
-        transition: transform 0.2s;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
     }
     div.stButton > button:hover {
         transform: scale(1.05);
-        color: #000 !important;
+        box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        color: white !important;
     }
     
     /* Tab Styling */
@@ -63,14 +66,20 @@ st.markdown("""
         font-weight: 600;
     }
     button[data-baseweb="tab"][aria-selected="true"] {
-        color: #00C9FF !important;
-        border-bottom: 2px solid #00C9FF !important;
+        color: #FF6B6B !important; /* Match the orange theme */
+        border-bottom: 2px solid #FF6B6B !important;
     }
     
     /* Chat Bubbles */
     .stChatMessage {
         background-color: #262730;
         border: 1px solid #444;
+    }
+    
+    /* Expander Header */
+    .streamlit-expanderHeader {
+        background-color: #262730;
+        color: #E0E0E0 !important;
     }
 </style>
 """, unsafe_allow_html=True)
