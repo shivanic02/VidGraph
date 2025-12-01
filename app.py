@@ -2,6 +2,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 from dotenv import load_dotenv
 import google.generativeai as genai 
+from gtts import gTTS # Audio Generation
+import io
 
 # Import engines
 from src.llm_engine import extract_knowledge_graph, generate_quiz, generate_summary, get_available_model
@@ -13,160 +15,181 @@ load_dotenv()
 # --- APP CONFIGURATION ---
 st.set_page_config(page_title="VidGraph.ai", layout="wide", page_icon="🧠")
 
-# --- CUSTOM CSS: DARK THEME ---
+# --- CUSTOM CSS: PREMIUM DARK THEME ---
 st.markdown("""
 <style>
-    /* 1. Force the background to Blackish-Grey */
+    /* Dark Background */
     .stApp {
-        background-color: #1E1E1E;
+        background-color: #121212;
     }
 
-    /* 2. CRITICAL FIX: Force all text to be White/Light for contrast */
+    /* Text Colors - Force Light/White */
     h1, h2, h3, h4, h5, h6, p, li, span, div, label {
-        color: #FAFAFA !important;
+        color: #E0E0E0 !important;
     }
     
-    /* 3. Sidebar: Slightly lighter dark grey for separation */
+    /* Sidebar */
     section[data-testid="stSidebar"] {
-        background-color: #262730;
-        border-right: 1px solid #444;
+        background-color: #1E1E1E;
+        border-right: 1px solid #333;
     }
     
-    /* 4. Text Areas: Dark Cards with Light Text */
+    /* Inputs */
     .stTextArea textarea {
-        font-size: 16px;
-        color: #FAFAFA !important;
-        background-color: #333333 !important;
-        border: 1px solid #555;
-        border-radius: 10px;
+        background-color: #2D2D2D !important;
+        color: #E0E0E0 !important;
+        border: 1px solid #444;
     }
     
-    /* 5. Buttons: Keep the lively gradient */
+    /* Gradient Buttons */
     div.stButton > button {
-        background: linear-gradient(45deg, #FF6B6B, #FF8E53);
-        color: white !important;
+        background: linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%);
+        color: #000 !important;
         font-weight: bold;
         border: none;
-        border-radius: 25px;
         padding: 10px 25px;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        transition: transform 0.2s;
     }
     div.stButton > button:hover {
         transform: scale(1.05);
-        box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        color: #000 !important;
     }
     
-    /* 6. Tabs styling */
+    /* Tab Styling */
     button[data-baseweb="tab"] {
-        color: #FAFAFA !important;
+        background-color: transparent !important;
+        color: #E0E0E0 !important;
         font-weight: 600;
     }
-    
-    /* 7. Chat Bubbles Fix for Dark Mode */
-    .stChatMessage {
-        background-color: #262730;
-        border-radius: 15px;
-        padding: 15px;
-        border: 1px solid #444;
-        margin-bottom: 10px;
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #00C9FF !important;
+        border-bottom: 2px solid #00C9FF !important;
     }
     
-    /* 8. Expander Header Fix */
-    .streamlit-expanderHeader {
+    /* Chat Bubbles */
+    .stChatMessage {
         background-color: #262730;
-        color: #FAFAFA !important;
+        border: 1px solid #444;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("## ⚙️ Settings")
+    st.markdown("## ⚙️ Intelligence Hub")
     
     if "GOOGLE_API_KEY" in st.secrets:
         api_key = st.secrets["GOOGLE_API_KEY"]
-        st.success("✅ Connected")
+        st.success("✅ Neural Engine Active")
     else:
         api_key = st.text_input("Gemini API Key", type="password")
 
-    st.markdown("---")
-    st.markdown("### 🌟 About")
-    st.info("VidGraph turns dense text into living knowledge maps.")
+    st.divider()
+    
+    # --- PERSONA SELECTOR ---
+    st.markdown("### 🎭 Tutor Persona")
+    persona = st.selectbox(
+        "Choose your learning style:",
+        ["Standard", "👶 Explain Like I'm 5", "🧐 Academic / Expert"],
+        index=0
+    )
+    
+    st.divider()
+    st.info("VidGraph transforms unstructured video data into interconnected knowledge maps.")
 
 # --- MAIN CONTENT ---
-st.title("VidGraph.ai")
-st.markdown("### 🧠 The AI Study Companion")
-st.caption("Paste a transcript below to generate a Knowledge Graph, Quiz, and Study Guide.")
+st.title("VidGraph.ai 🧠")
+st.markdown("#### The AI-Powered Knowledge Cartographer")
 
 # --- INPUT SECTION ---
 transcript_input = st.text_area(
-    "📥 Input Source", 
+    "📥 Knowledge Source", 
     height=200, 
-    placeholder="Paste your video transcript, lecture notes, or article here..."
+    placeholder="Paste lecture transcript, video captions, or research notes here..."
 )
 
 col1, col2 = st.columns([1, 5])
 with col1:
-    generate_btn = st.button("✨ Generate", type="primary")
+    generate_btn = st.button("🚀 Visualize", type="primary")
 
-# --- PROCESSING LOGIC ---
+# --- LOGIC ---
 if generate_btn:
     if not api_key:
-        st.error("⚠️ Please enter a Google API Key in the sidebar.")
+        st.error("⚠️ System Offline: API Key Missing.")
     elif not transcript_input:
-        st.warning("⚠️ Please paste some text first.")
+        st.warning("⚠️ Input Required: Please paste source text.")
     else:
         st.session_state['transcript'] = transcript_input
+        st.session_state['persona'] = persona 
         
-        with st.spinner("🤖 AI is analyzing concepts..."):
-            # Parallel Execution
-            graph_data = extract_knowledge_graph(transcript_input, api_key)
-            quiz_data = generate_quiz(transcript_input, api_key)
-            summary_text = generate_summary(transcript_input, api_key)
+        with st.spinner("🔮 Mapping Neural Connections..."):
+            # Pass the 'persona' to the AI functions
+            graph_data = extract_knowledge_graph(transcript_input, api_key, persona)
+            quiz_data = generate_quiz(transcript_input, api_key, persona)
+            summary_text = generate_summary(transcript_input, api_key, persona)
             
             st.session_state['graph_data'] = graph_data
             st.session_state['quiz_data'] = quiz_data
             st.session_state['summary_text'] = summary_text
-            st.session_state.messages = [] # Reset chat
+            st.session_state.messages = [] 
             
-            st.rerun() # Force refresh to show results
+            st.rerun()
 
-# --- RESULTS DISPLAY ---
+# --- RESULTS DASHBOARD ---
 if 'graph_data' in st.session_state:
     
     st.markdown("---")
     
-    # TABS INTERFACE
-    tab1, tab2, tab3 = st.tabs(["🗺️ Concept Map", "📝 Quiz", "💬 AI Chat"])
+    # 4 TABS
+    tab1, tab2, tab3, tab4 = st.tabs(["🗺️ Knowledge Graph", "🎙️ Audio Brief", "📝 Quiz", "💬 AI Chat"])
     
+    # TAB 1: GRAPH
     with tab1:
-        st.subheader("Interactive Knowledge Graph")
+        st.subheader(f"Concept Map ({st.session_state.get('persona', 'Standard')})")
         if "error" in st.session_state['graph_data']:
             st.error(st.session_state['graph_data']['error'])
         else:
-            # Render the updated colorful graph
             html_graph = visualize_knowledge_graph(st.session_state['graph_data'])
             components.html(html_graph, height=600, scrolling=True)
-            st.caption("Tip: Click 'Fullscreen' inside the graph for a better view.")
 
+    # TAB 2: AUDIO SUMMARY
     with tab2:
-        st.subheader("✅ Practice Quiz")
+        st.subheader("🎧 Audio Overview")
+        st.caption("Listen to the AI-generated summary of this topic.")
+        
+        summary = st.session_state.get('summary_text', "No summary available.")
+        st.markdown(f"**Text Summary:**\n{summary}")
+        
+        if st.button("▶️ Generate Audio"):
+            with st.spinner("Synthesizing voice..."):
+                try:
+                    tts = gTTS(text=summary, lang='en', slow=False)
+                    mp3_fp = io.BytesIO()
+                    tts.write_to_fp(mp3_fp)
+                    st.audio(mp3_fp, format='audio/mp3')
+                except Exception as e:
+                    st.error(f"Audio generation failed: {e}")
+
+    # TAB 3: QUIZ
+    with tab3:
+        st.subheader("✅ Knowledge Check")
         quiz_data = st.session_state.get('quiz_data')
         if not quiz_data or "error" in quiz_data:
-            st.warning("Quiz generation failed. Try a longer text.")
+            st.warning("Quiz unavailable.")
         else:
             for i, q in enumerate(quiz_data):
                 with st.expander(f"Question {i+1}: {q['question']}", expanded=True):
-                    user_answer = st.radio("Choose answer:", q['options'], key=f"q{i}")
-                    if st.button("Check", key=f"btn{i}"):
+                    user_answer = st.radio("Select Answer:", q['options'], key=f"q{i}")
+                    if st.button("Submit", key=f"btn{i}"):
                         if user_answer.strip() == q['answer'].strip():
                             st.success(f"Correct! {q.get('explanation', '')}")
                         else:
-                            st.error(f"Wrong. Correct: {q['answer']}")
+                            st.error(f"Incorrect. The correct answer is: {q['answer']}")
 
-    with tab3:
-        st.subheader("💬 Chat with Document")
+    # TAB 4: CHAT
+    with tab4:
+        st.subheader("💬 Socratic Tutor")
         
         if "messages" not in st.session_state:
             st.session_state.messages = []
@@ -175,7 +198,7 @@ if 'graph_data' in st.session_state:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-        if prompt := st.chat_input("Ask about the transcript..."):
+        if prompt := st.chat_input("Ask a question..."):
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
@@ -184,22 +207,26 @@ if 'graph_data' in st.session_state:
                 try:
                     genai.configure(api_key=api_key)
                     model = genai.GenerativeModel(get_available_model())
-                    full_prompt = f"Context: {st.session_state['transcript'][:30000]}\n\nQuestion: {prompt}"
+                    full_prompt = f"""
+                    Context: {st.session_state['transcript'][:30000]}
+                    Persona: {st.session_state.get('persona', 'Standard')}
+                    Question: {prompt}
+                    """
                     response = model.generate_content(full_prompt)
                     st.markdown(response.text)
                     st.session_state.messages.append({"role": "assistant", "content": response.text})
                 except Exception as e:
                     st.error(f"Error: {e}")
 
-    # --- EXPORT SECTION ---
+    # --- FOOTER ACTIONS ---
     st.markdown("---")
     col_a, col_b = st.columns([4, 1])
     with col_b:
-        if st.button("📥 Export PDF"):
-            with st.spinner("Generating PDF..."):
+        if st.button("📥 Download PDF Guide"):
+            with st.spinner("Compiling..."):
                 pdf_bytes = create_pdf(
                     st.session_state['summary_text'],
                     st.session_state['graph_data'],
                     st.session_state['quiz_data']
                 )
-                st.download_button("Click to Download", pdf_bytes, "VidGraph_Study_Guide.pdf", "application/pdf")
+                st.download_button("Download PDF", pdf_bytes, "VidGraph_Guide.pdf", "application/pdf")
