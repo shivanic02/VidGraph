@@ -6,8 +6,9 @@ def visualize_knowledge_graph(data):
     """
     Generates the HTML for the graph with:
     1. Multi-line Labels (Full text, wrapped nicely)
-    2. aggressive 'Avoid Overlap' physics
+    2. Aggressive 'Avoid Overlap' physics
     3. 'Relevance: 10%' Tooltips
+    4. Fullscreen Button
     """
     
     # --- STEP 1: CALCULATE IMPORTANCE (PageRank) ---
@@ -23,7 +24,7 @@ def visualize_knowledge_graph(data):
         pagerank_scores = {node['id']: 0.1 for node in data['nodes']}
 
     # --- STEP 2: BUILD VISUAL NETWORK ---
-    # THEME: White background, Dark text
+    # THEME: White background, Dark text for better readability
     net = Network(height="600px", width="100%", bgcolor="#ffffff", font_color="#333333", cdn_resources='remote')
     
     for node in data['nodes']:
@@ -59,7 +60,6 @@ def visualize_knowledge_graph(data):
         net.add_edge(edge['source'], edge['target'], color="#cccccc")
     
     # --- PHYSICS FIX: FORCE SEPARATION ---
-    # We use explicit options to turn on 'avoidOverlap'
     net.set_options("""
     var options = {
       "physics": {
@@ -75,7 +75,7 @@ def visualize_knowledge_graph(data):
     }
     """)
     
-    # --- STEP 3: INJECT FULLSCREEN BUTTON ---
+    # --- STEP 3: INJECT CUSTOM JAVASCRIPT ---
     try:
         html_string = net.generate_html()
         
