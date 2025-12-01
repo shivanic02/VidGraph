@@ -13,15 +13,28 @@ def get_available_model():
     except:
         return "models/gemini-1.5-flash"
 
-def extract_knowledge_graph(transcript, api_key):
-    """Generates a fully interconnected Knowledge Graph."""
+def get_persona_instruction(persona):
+    """Returns the system instruction based on the selected persona."""
+    if persona == "👶 Explain Like I'm 5":
+        return "Explain simply, use analogies, avoid jargon. Keep it fun and easy to understand."
+    elif persona == "🧐 Academic / Expert":
+        return "Use precise technical terminology, focus on depth, nuance, and advanced concepts. Be formal."
+    else: # Standard
+        return "Be clear, concise, and professional."
+
+def extract_knowledge_graph(transcript, api_key, persona="Standard"):
+    """Generates the Knowledge Graph with Node Importance."""
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(get_available_model())
         
-        # IMPROVED PROMPT: Explicitly asks for cross-connections
+        style = get_persona_instruction(persona)
+        
         prompt = f"""
-        You are a Knowledge Graph creator. Analyze the text and identify:
+        You are a Knowledge Graph creator. 
+        Style Requirement: {style}
+        
+        Analyze the text and identify:
         1. "Core Concepts" (The main 3-5 topics).
         2. "Sub Concepts" (The details supporting them).
         3. "Relationships" (Connect concepts logically).
@@ -53,14 +66,17 @@ def extract_knowledge_graph(transcript, api_key):
     except Exception as e:
         return {"error": f"Graph Error: {str(e)}"}
 
-def generate_quiz(transcript, api_key):
+def generate_quiz(transcript, api_key, persona="Standard"):
     """Generates a 3-question quiz."""
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(get_available_model())
         
+        style = get_persona_instruction(persona)
+        
         prompt = f"""
         Generate 3 multiple-choice questions based on this text.
+        Style Requirement: {style}
         
         Transcript:
         {transcript[:30000]}
@@ -84,14 +100,17 @@ def generate_quiz(transcript, api_key):
     except Exception as e:
         return [{"error": str(e)}]
 
-def generate_summary(transcript, api_key):
+def generate_summary(transcript, api_key, persona="Standard"):
     """Generates a concise executive summary."""
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(get_available_model())
         
+        style = get_persona_instruction(persona)
+        
         prompt = f"""
         Write a high-level executive summary of the following transcript.
+        Style Requirement: {style}
         Use bullet points for readability. Keep it under 250 words.
         
         Transcript:
