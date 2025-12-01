@@ -2,7 +2,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 from dotenv import load_dotenv
 import google.generativeai as genai 
-from gtts import gTTS # Audio Generation
+from gtts import gTTS 
 import io
 
 # Import engines
@@ -15,8 +15,7 @@ load_dotenv()
 # --- APP CONFIGURATION ---
 st.set_page_config(page_title="VidGraph.ai", layout="wide", page_icon="🧠")
 
-# --- CUSTOM CSS: PREMIUM DARK THEME ---
-# --- CUSTOM CSS: PREMIUM DARK THEME WITH ORANGE BUTTONS ---
+# --- CUSTOM CSS: DARK MODE + ORANGE BUTTONS ---
 st.markdown("""
 <style>
     /* Dark Background */
@@ -42,7 +41,7 @@ st.markdown("""
         border: 1px solid #444;
     }
     
-    /* ORANGE GRADIENT BUTTONS (Restored) */
+    /* ORANGE GRADIENT BUTTONS */
     div.stButton > button {
         background: linear-gradient(45deg, #FF6B6B, #FF8E53);
         color: white !important;
@@ -66,7 +65,7 @@ st.markdown("""
         font-weight: 600;
     }
     button[data-baseweb="tab"][aria-selected="true"] {
-        color: #FF6B6B !important; /* Match the orange theme */
+        color: #FF6B6B !important;
         border-bottom: 2px solid #FF6B6B !important;
     }
     
@@ -96,11 +95,11 @@ with st.sidebar:
 
     st.divider()
     
-    # --- PERSONA SELECTOR ---
-    st.markdown("### 🎭 Tutor Persona")
+    # --- NEW NAMES: PERSONA SELECTOR ---
+    st.markdown("### 🎭 Learning Mode")
     persona = st.selectbox(
-        "Choose your learning style:",
-        ["Standard", "👶 Explain Like I'm 5", "🧐 Academic / Expert"],
+        "Choose your level:",
+        ["Standard", "Beginner (Simplify)", "Expert (Deep Dive)"],
         index=0
     )
     
@@ -150,7 +149,7 @@ if 'graph_data' in st.session_state:
     
     st.markdown("---")
     
-    # 4 TABS
+    # TABS
     tab1, tab2, tab3, tab4 = st.tabs(["🗺️ Knowledge Graph", "🎙️ Audio Brief", "📝 Quiz", "💬 AI Chat"])
     
     # TAB 1: GRAPH
