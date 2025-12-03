@@ -129,3 +129,4 @@ def visualize_knowledge_graph(data):
         
     except Exception as e:
         return f"<div>Error generating graph: {e}</div>"
+    
