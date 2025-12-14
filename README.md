@@ -77,6 +77,7 @@ VidGraph/
 ├── requirements.txt          # Python Dependencies
 ├── .gitignore                # Git Exclusion Rules
 └── README.md                 # Project Documentation
+```
 
 ---
 
