@@ -39,7 +39,11 @@ We don't just visualize data; we analyze it.
 * **Full-Context Injection:** Leverages Gemini's 1M+ token context window to inject the entire transcript into the system prompt.
 * **Grounded Q&A:** The chatbot answers questions *strictly* based on the video content, reducing hallucinations and acting as a focused tutor.
 
-### 4. 📄 Automated Study Guide Generation
+### 4. 🎧 Multi-Modal Learning
+* **Audio Summaries:** Uses **gTTS (Google Text-to-Speech)** to convert AI summaries into audio, making learning accessible on the go.
+* **Automated Study Guides:** Generates a downloadable PDF containing the summary, graph concepts, and quiz using a custom FPDF engine.
+
+### 5. 📄 Automated Study Guide Generation
 
 * **FPDF Engine:** Dynamically compiles the AI-generated summary, the structured concept list, and a practice quiz into a downloadable PDF.
 * **Latin-1 Encoding Fix:** Includes custom text sanitization to handle complex Unicode characters during PDF generation.
@@ -55,6 +59,24 @@ We don't just visualize data; we analyze it.
 | **Graph Logic** | **NetworkX** | PageRank calculation & Graph Theory algorithms |
 | **Visualization** | **PyVis** | Interactive, physics-based network rendering (JavaScript) |
 | **Export** | **FPDF** | Programmatic PDF generation for study guides |
+
+---
+
+## 📂 Project Structure
+
+```text
+VidGraph/
+├── .streamlit/
+│   └── secrets.toml          # API Keys (Not committed)
+├── src/
+│   ├── assets/               # Images for README
+│   ├── graph_builder.py      # PyVis & PageRank Logic
+│   ├── llm_engine.py         # Gemini API & Prompt Engineering
+│   └── pdf_generator.py      # PDF Creation Logic
+├── app.py                    # Main Streamlit Application
+├── requirements.txt          # Python Dependencies
+├── .gitignore                # Git Exclusion Rules
+└── README.md                 # Project Documentation
 
 ---
 
