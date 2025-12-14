@@ -31,7 +31,6 @@ def create_pdf(summary_text, graph_data, quiz_data):
     pdf.chapter_title("2. Key Concepts (Knowledge Graph)")
     for node in graph_data['nodes']:
         label = node['label']
-        # FIX: Use safe characters instead of Unicode symbols
         prefix = "[CORE]" if node.get('type') == 'core' else "-"
         pdf.chapter_body(f"{prefix} {label}")
         

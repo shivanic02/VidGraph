@@ -24,7 +24,6 @@ def visualize_knowledge_graph(data):
         pagerank_scores = {node['id']: 0.1 for node in data['nodes']}
 
     # --- STEP 2: BUILD VISUAL NETWORK ---
-    # THEME: White background, Dark text for better readability
     net = Network(height="600px", width="100%", bgcolor="#ffffff", font_color="#333333", cdn_resources='remote')
     
     for node in data['nodes']:
