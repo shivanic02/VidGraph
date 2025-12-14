@@ -84,8 +84,10 @@ VidGraph/
 
 <img src="src/assets/Demo1.png" alt="VidGraph Interface" width="800">
 <img src="src/assets/Demo2.png" alt="Interactive Knowledge Graph" width="800">
-<img src="src/assets/Demo3.png" alt="Quiz" width="800">
-<img src="src/assets/Demo4.png" alt="ChatBot" width="800">
+<img src="src/assets/Demo3.png" alt="Audio" width="800">
+<img src="src/assets/Demo4.png" alt="Quiz" width="800">
+<img src="src/assets/Demo5.png" alt="ChatBot" width="800">
+<img src="src/assets/Demo6.png" alt="PDF" width="800">
 
 ## 📦 Installation
 
