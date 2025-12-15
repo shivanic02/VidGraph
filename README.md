@@ -119,6 +119,6 @@ Built for CodeCraze Hackathon 2025 with blood, sweat, and syntax errors.
 
 - Innovation: Applying Graph Theory (PageRank) to LLM outputs for better educational prioritization.
 
-- - Team:
+- Team:
   - [Shivani](https://github.com/shivanic02)
   - [Shrey](https://github.com/shrey708)
