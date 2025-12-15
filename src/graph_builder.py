@@ -16,7 +16,11 @@ def visualize_knowledge_graph(data):
     for node in data['nodes']:
         nx_graph.add_node(node['id'], label=node['label'], type=node.get('type'))
     for edge in data['edges']:
-        nx_graph.add_edge(edge['source'], edge['target'])
+        # NETWORKX FIX: Only add edge if both nodes exist in the data
+        # (This prevents crashes if the AI hallucinates an edge)
+        all_node_ids = [n['id'] for n in data['nodes']]
+        if edge['source'] in all_node_ids and edge['target'] in all_node_ids:
+            nx_graph.add_edge(edge['source'], edge['target'])
         
     try:
         pagerank_scores = nx.pagerank(nx_graph)
@@ -26,6 +30,9 @@ def visualize_knowledge_graph(data):
     # --- STEP 2: BUILD VISUAL NETWORK ---
     net = Network(height="600px", width="100%", bgcolor="#ffffff", font_color="#333333", cdn_resources='remote')
     
+    # Track added nodes to prevent edge errors
+    added_node_ids = set()
+
     for node in data['nodes']:
         score = pagerank_scores.get(node['id'], 0.1)
         
@@ -54,9 +61,12 @@ def visualize_knowledge_graph(data):
             borderWidth=2,
             font={'size': 14, 'face': 'sans-serif'}
         )
+        added_node_ids.add(node['id'])
     
+    # PYVIS FIX: Only add edge if both nodes were actually added to the graph
     for edge in data['edges']:
-        net.add_edge(edge['source'], edge['target'], color="#cccccc")
+        if edge['source'] in added_node_ids and edge['target'] in added_node_ids:
+            net.add_edge(edge['source'], edge['target'], color="#cccccc")
     
     # --- PHYSICS FIX: FORCE SEPARATION ---
     net.set_options("""
@@ -128,4 +138,3 @@ def visualize_knowledge_graph(data):
         
     except Exception as e:
         return f"<div>Error generating graph: {e}</div>"
-    
