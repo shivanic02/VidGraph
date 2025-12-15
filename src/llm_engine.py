@@ -15,7 +15,6 @@ def get_available_model():
 
 def get_persona_instruction(persona):
     """Returns the system instruction based on the selected persona."""
-    # --- UPDATED LOGIC FOR NEW NAMES ---
     if "Beginner" in persona:
         return "Explain simply, use analogies, avoid jargon. Keep it fun and easy to understand."
     elif "Expert" in persona:
@@ -68,7 +67,7 @@ def extract_knowledge_graph(transcript, api_key, persona="Standard"):
         return {"error": f"Graph Error: {str(e)}"}
 
 def generate_quiz(transcript, api_key, persona="Standard"):
-    """Generates a 3-question quiz."""
+    """Generates a 3-question quiz with robust error handling."""
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(get_available_model())
@@ -82,21 +81,29 @@ def generate_quiz(transcript, api_key, persona="Standard"):
         Transcript:
         {transcript[:30000]}
 
-        Output STRICTLY JSON (no markdown):
+        Output STRICTLY JSON (no markdown). Ensure every object has these EXACT keys:
         [
             {{
                 "question": "Question text here?",
-                "options": ["Full text of Option A", "Full text of Option B", "Full text of Option C", "Full text of Option D"],
-                "answer": "Full text of Option B",
-                "explanation": "Brief explanation."
+                "options": ["Option A", "Option B", "Option C", "Option D"],
+                "answer": "Option B",
+                "explanation": "Why it is correct."
             }}
         ]
-        
-        IMPORTANT: The "answer" field must MATCH EXACTLY one of the strings in the "options" list.
         """
         response = model.generate_content(prompt)
         clean_text = response.text.replace("```json", "").replace("```", "").strip()
-        return json.loads(clean_text)
+        data = json.loads(clean_text)
+        
+        # VALIDATION: Ensure the data is a list and has the right keys
+        if isinstance(data, list):
+            valid_quiz = []
+            for item in data:
+                if "question" in item and "options" in item and "answer" in item:
+                    valid_quiz.append(item)
+            return valid_quiz
+        else:
+            return [{"error": "Invalid quiz format returned by AI"}]
 
     except Exception as e:
         return [{"error": str(e)}]
